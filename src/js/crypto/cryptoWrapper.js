@@ -42,7 +42,7 @@ function decryptPassword(data, success, error){
 }
 function decryptAccount(data, success, error){
     var origData = data;
-    var decryptedAccount = {"index": data["index"], "kss"=data["kss"]};
+    var decryptedAccount = {"index": data["index"], "kss":data["kss"]};
     function isAccountFinished(){
         for (key in data){
             if (!(key in decryptedAccount)) {
