@@ -79,13 +79,6 @@ function sanitize_json(s){
     t=t.replace(/\n/g,'')
     return t.replace(/\r/g,'');
 }
-function decryptPassword(name, kss){
-    var thekey=decryptchar(kss,secretkey);
-    if (thekey==""){
-        return "";
-    }
-    return get_orig_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(name)),ALPHABET,thekey);
-}
 function encryptPassword(name, pass){
     pass=gen_temp_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(name)),ALPHABET,pass);
     return encryptchar(pass,secretkey);
@@ -238,7 +231,7 @@ function dataReady(data){
         fields[x]["count"] = 0;
     }
     var accounts = data["accounts"];
-    var fdata=data["fdata"];
+    var fdata = data["fdata"];
     setInterval(countdown, 1000);
     setInterval(checksessionalive,1000); 
     ALPHABET = default_letter_used;
@@ -278,30 +271,40 @@ function dataReady(data){
         seenLoginInformation = true;
     }
 
+    var accountsLeft = accounts.length;
     for(var i = 0; i<accounts.length; i++) {
-        var index = accounts[i]["index"];
-        accountarray[index] = { "index":index, "other": {} };
-        accountarray[index]["fname"]=''; 
-        accountarray[index]["name"] = decryptchar(accounts[i]["name"],secretkey);
-        accountarray[index]["enpassword"] = accounts[i]["kss"];
-        if (accounts[i]["additional"] != "")
-        {//decrypt
-            var tempchar = decryptchar(accounts[i]["additional"], secretkey);
-            //extract json
-            var data = $.parseJSON(tempchar);
-            accountarray[index]["other"] = data;
-            for (x in accountarray[index]["other"])
-                if ( (accountarray[index]["other"][x] != "") && (x in fields) )
-                    fields[x]["count"] += 1;
-        }
-        callPlugins("readAccount",{"account":accountarray[index]});
+        decryptAccount(accounts[i], function(origAccount, account){
+            var index = accounts[i]["index"];
+            accountarray[index] = { "index":index, "other": {} };
+            accountarray[index]["fname"]=''; 
+            accountarray[index]["name"] = account["name"];
+            accountarray[index]["enpassword"] = account["kss"];
+            if (account["additional"] != "") {
+                //extract json
+                var data = $.parseJSON(account["additional"]);
+                accountarray[index]["other"] = data;
+                for (x in accountarray[index]["other"])
+                    if ( (accountarray[index]["other"][x] != "") && (x in fields) )
+                        fields[x]["count"] += 1;
+            }
+            accountsLeft -= 1;
+            callPlugins("readAccount",{"account":accountarray[index]});
+            if (accountsLeft <= 0){
+                accountsDecrypted(fdata);
+            }
+        }, function(data, routine, error){
+            alert("Error in "+routine+": "+error+"\r\nDetails in console.");
+            console.log("Error in "+routine+": "+error+"\r\nData:");
+            console.log(data);
+        });
     }
+}
+function accountsDecrypted(fdata){
     for(var i = 0; i<fdata.length; i++) {
         var index = fdata[i]["index"];
-        accountarray[index]['fname'] = decryptchar(fdata[i]['fname'],secretkey);
+        accountarray[index]['fname'] = decryptChar(fdata[i]['fname']);
         accountarray[index]['fkey'] = fdata[i]['fkey'];
     }
-
     callPlugins("accountsReady");
     initFields();
     callPlugins("fieldsReady", {"fields":fields, "accounts":accountarray});
@@ -683,13 +686,14 @@ $(document).ready(function(){
     $("#editAccountShowPassword").click(function(){
         $("#editAccountShowPassword").popover('hide');
         var id = parseInt($("#edit").data('id'));
-        var thekey=decryptPassword(accountarray[id]["name"], accountarray[id]['enpassword']);
+        decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]},function(data, thekey){
         if (thekey==""){
             $("#edititeminputpw").val("Oops, some error occurs!");
             return;
         }
         $("#edititeminputpw").val(thekey);
         $("#editAccountShowPassword").addClass("collapse");
+    }, defaultError);
     });
     $("#delbtn").click(function(){
         delepw($("#edit").data('id'));
@@ -891,17 +895,18 @@ function edit(row){
 function clicktoshow(id){ 
     timeout=default_timeout+Math.floor(Date.now() / 1000);
     id=parseInt(id);
-    var thekey = decryptPassword(accountarray[id]["name"],accountarray[id]["enpassword"]);
-    if (thekey==""){
-        $("#"+id).text("Oops, some error occurs!");
-        return;
-    }
-    $("#"+id).empty()
-        .append($('<span class="pwdshowbox"></span>').css('font-family','passwordshow'))
-        .append($('<a title="Hide" class="cellOptionButton"></a>')
+    decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]},function(data, thekey){
+        if (thekey==""){
+            $("#"+id).text("Oops, some error occurs!");
+            return;
+        }
+        $("#"+id).empty()
+            .append($('<span class="pwdshowbox"></span>').css('font-family','passwordshow'))
+            .append($('<a title="Hide" class="cellOptionButton"></a>')
                 .on('click',{"index":id},function(event){clicktohide(event.data.index);}) 
-                .append($('<span class="glyphicon glyphicon-eye-close"></span>')));
-    $("#"+id+" > .pwdshowbox").text(thekey);
+                    .append($('<span class="glyphicon glyphicon-eye-close"></span>')));
+        $("#"+id+" > .pwdshowbox").text(thekey);
+    }, defaultError);
 } 
 function showuploadfiledlg(id){
     $("#uploadfiledlg").modal("hide");
