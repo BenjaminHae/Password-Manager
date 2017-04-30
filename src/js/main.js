@@ -22,6 +22,11 @@ $.ajaxPrefilter(function(options, originalOptions, jqXHR){
         options.data += "session_token=" + localStorage.session_token;
     }
 });
+function defaultError(data, routine, error){
+    alert("Error in "+routine+": "+error+"\r\nDetails in console.");
+    console.log("Error in "+routine+": "+error+"\r\nData:");
+    console.log(data);
+}
 function quitpwd(reason)
 {
     reason = reason || "";
@@ -292,11 +297,7 @@ function dataReady(data){
             if (accountsLeft <= 0){
                 accountsDecrypted(fdata);
             }
-        }, function(data, routine, error){
-            alert("Error in "+routine+": "+error+"\r\nDetails in console.");
-            console.log("Error in "+routine+": "+error+"\r\nData:");
-            console.log(data);
-        });
+        }, defaultError);
     }
 }
 function accountsDecrypted(fdata){
