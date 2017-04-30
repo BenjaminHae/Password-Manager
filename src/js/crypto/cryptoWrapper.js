@@ -1,7 +1,7 @@
 //data contains, value, key and possibly iv or salt
 //success is a function(data, result), with data being the input data and result being a string(possible of a json object containing salt/iv and the encrypted char)
 function encryptChar(data, success, error){
-    if(data["value"]==""||data["key"]==""){
+    if(data["key"]==""){
         error(data, "encryptchar", "empty key detected");
         return;
     }
@@ -10,11 +10,14 @@ function encryptChar(data, success, error){
 }
 //data contains, value(possibly a json string with iv and encrypted string), key
 function decryptChar(data, success, error){ 
-    if(data["value"]==""||data["key"]==""){  
+    if(data==""){
+        success(data, "");
+    }
+    if(secretkey==""){
         error(data, "decryptchar", "empty key detected");
         return;
     }
-    var p=CryptoJS.enc.Utf8.stringify(CryptoJS.AES.decrypt(data["value"],data["key"]));
+    var p=CryptoJS.enc.Utf8.stringify(CryptoJS.AES.decrypt(data, secretkey));
     success(data, p);
 } 
 //data: password, salt, iterations
@@ -29,10 +32,17 @@ function deriveKey(data, success, error){
     success(data, gen_key);
 }
 function decryptPassword(data, success, error){
+    var origData = data;
+    decryptChar(data["enpassword"], function(data, thekey){
+        if (thekey==""){
+            success(data, "");
+        }
+        success(origData, get_orig_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(origData["name"])),ALPHABET,thekey));
+    }, error);
 }
 function decryptAccount(data, success, error){
     var origData = data;
-    var decryptedAccount = {};
+    var decryptedAccount = {"index": data["index"], "kss"=data["kss"]};
     function isAccountFinished(){
         for (key in data){
             if (!(key in decryptedAccount)) {
@@ -42,6 +52,9 @@ function decryptAccount(data, success, error){
         return true;
     }
     for (key in data){
+        if (key == "index"||key=="kss"){
+            continue;
+        }
         decryptChar(data[key], function(data, p){
             decryptedAccount[key] = p;
             if (isAccountFinished()){
