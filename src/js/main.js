@@ -276,9 +276,9 @@ function dataReady(data){
         seenLoginInformation = true;
     }
 
-    var accountsLeft = accounts.length;
+    var decryptionsLeft = accounts.length + fdata.length;
     for(var i = 0; i<accounts.length; i++) {
-        decryptAccount(accounts[i], function(origAccount, account){
+        decryptAccount(accounts[i], secretkey, function(origAccount, account){
             var index = accounts[i]["index"];
             accountarray[index] = { "index":index, "other": {} };
             accountarray[index]["fname"]=''; 
@@ -292,20 +292,26 @@ function dataReady(data){
                     if ( (accountarray[index]["other"][x] != "") && (x in fields) )
                         fields[x]["count"] += 1;
             }
-            accountsLeft -= 1;
+            decryptionsLeft -= 1;
             callPlugins("readAccount",{"account":accountarray[index]});
-            if (accountsLeft <= 0){
-                accountsDecrypted(fdata);
+            if (decryptionsLeft <= 0){
+                accountsDecrypted();
+            }
+        }, defaultError);
+    }
+    for(var i = 0; i<fdata.length; i++) {
+        var index = fdata[i]["index"];
+        accountarray[index]['fkey'] = fdata[i]['fkey'];
+        decryptChar(fdata[i]['fname'], secretkey, function(currentFile, fname){
+            accountarray[index]['fname'] =  fname;
+                decryptionsLeft -= 1;
+            if (decryptionsLeft <= 0){
+                accountsDecrypted();
             }
         }, defaultError);
     }
 }
 function accountsDecrypted(fdata){
-    for(var i = 0; i<fdata.length; i++) {
-        var index = fdata[i]["index"];
-        accountarray[index]['fname'] = decryptChar(fdata[i]['fname']);
-        accountarray[index]['fkey'] = fdata[i]['fkey'];
-    }
     callPlugins("accountsReady");
     initFields();
     callPlugins("fieldsReady", {"fields":fields, "accounts":accountarray});
@@ -425,10 +431,16 @@ function showTable(accounts)
 function downloadf(id){ 
     $("#messagewait").modal("show");
     $.post('rest/downloadfile.php',{id:id},function(filedata){
-        if(filedata['status']=="error") showMessage('danger','ERROR! '+filedata['message'], false);
+        if(filedata['status']=="error") {
+            $("#messagewait").modal("hide");
+            showMessage('danger','ERROR! '+filedata['message'], false);
+        }
         else{
             var fname = accountarray[id]['fname'];
-            if(fname=='') showMessage('danger','ERROR! '+filedata['message'], false);
+            if(fname=='') {
+                showMessage('danger','ERROR! '+filedata['message'], false);
+                $("#messagewait").modal("hide");
+            }
             else{
                 function base64toBlob(base64Data, contentType) {
                     contentType = contentType || '';
@@ -456,9 +468,9 @@ function downloadf(id){
                 var typedata = data.substring(5,data.search(";"));
                 data = data.substring(data.search(",")+1);
                 saveAs(base64toBlob(data,typedata),fname);
+                $("#messagewait").modal("hide");
             }
         }
-        $("#messagewait").modal("hide");
     });
 };
 function emptyTable() {
