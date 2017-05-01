@@ -42,6 +42,10 @@ function decryptPassword(data, key, success, error){
         success(origData, get_orig_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(origData["name"])),ALPHABET,thekey));
     }, error);
 }
+function encryptPassword(data, key, success, error){
+    pass = gen_temp_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(data["name"])),ALPHABET,data["pass"]);
+    encryptChar(pass, secretkey, success, error);
+}
 function decryptAccount(data, key, success, error){
     // no timeout needed as it's already async by using decryptChar
     var origData = data;
@@ -72,8 +76,9 @@ function encryptAccount(data, key, success, error){
     // no timeout needed as it's already async by using decryptChar
     var origData = data;
     var encryptedAccount = {};
-    if ("index" in data)
-        encryptedAccount["index"] = data["index"];
+    if ("index" in data) {
+        encryptedAccount["index"] = origData["index"];
+    }
     function isAccountFinished(){
         for (item in origData){
             if (!(item in encryptedAccount)) {
@@ -82,12 +87,23 @@ function encryptAccount(data, key, success, error){
         }
         return true;
     }
+    encryptPassword({"name":origData["name"], "pass":origData["newpwd"]}, key, function(origPw, encPw){
+        encryptedAccount["newpwd"] = encPw;
+        if (isAccountFinished()){
+            success(origData, decryptedAccount);
+        }
+    }, error);
     for (item in data){
-        encryptChar(data[item], key, function(data, p){
-            encryptedAccount[item] = p;
-            if (isAccountFinished()){
-                success(origData, decryptedAccount);
-            }
-        }, error);
+        if (item == "index"||item == "newpwd"){
+            continue;
+        }
+        (function(data, item, key, encryptedAccount){
+            encryptChar(data[item], key, function(data, p){
+                encryptedAccount[item] = p;
+                if (isAccountFinished()){
+                    success(origData, encryptedAccount);
+                }
+            }, error);
+        })(data, item, key, encryptedAccount);
     }
 }
