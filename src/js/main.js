@@ -271,6 +271,9 @@ function dataReady(data){
     }
 
     var decryptionsLeft = accounts.length + fdata.length;
+    if (decryptionsLeft <= 0) {
+        accountsDecrypted();
+    }
     for(var i = 0; i<accounts.length; i++) {
         (function(i){
             decryptAccount(accounts[i], secretkey, function(origAccount, account){
