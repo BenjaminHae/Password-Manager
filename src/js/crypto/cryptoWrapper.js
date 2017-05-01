@@ -58,12 +58,14 @@ function decryptAccount(data, key, success, error){
         if (item == "index"||item=="kss"){
             continue;
         }
-        decryptChar(data[item], key, function(data, p){
-            decryptedAccount[item] = p;
-            if (isAccountFinished()){
-                success(origData, decryptedAccount);
-            }
-        }, error);
+        (function(data, item, key, decryptedAccount){
+            decryptChar(data[item], key, function(data, p){
+                decryptedAccount[item] = p;
+                if (isAccountFinished()){
+                    success(origData, decryptedAccount);
+                }
+            }, error);
+        })(data, item, key, decryptedAccount);
     }
 }
 function encryptAccount(data, key, success, error){

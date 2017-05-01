@@ -278,26 +278,28 @@ function dataReady(data){
 
     var decryptionsLeft = accounts.length + fdata.length;
     for(var i = 0; i<accounts.length; i++) {
-        decryptAccount(accounts[i], secretkey, function(origAccount, account){
-            var index = accounts[i]["index"];
-            accountarray[index] = { "index":index, "other": {} };
-            accountarray[index]["fname"]=''; 
-            accountarray[index]["name"] = account["name"];
-            accountarray[index]["enpassword"] = account["kss"];
-            if (account["additional"] != "") {
-                //extract json
-                var data = $.parseJSON(account["additional"]);
-                accountarray[index]["other"] = data;
-                for (x in accountarray[index]["other"])
-                    if ( (accountarray[index]["other"][x] != "") && (x in fields) )
+        (function(i){
+            decryptAccount(accounts[i], secretkey, function(origAccount, account){
+                var index = accounts[i]["index"];
+                accountarray[index] = { "index":index, "other": {} };
+                accountarray[index]["fname"]=''; 
+                accountarray[index]["name"] = account["name"];
+                accountarray[index]["enpassword"] = account["kss"];
+                if (account["additional"] != "") {
+                    //extract json
+                    var data = $.parseJSON(account["additional"]);
+                    accountarray[index]["other"] = data;
+                    for (x in accountarray[index]["other"])
+                        if ( (accountarray[index]["other"][x] != "") && (x in fields) )
                         fields[x]["count"] += 1;
-            }
-            decryptionsLeft -= 1;
-            callPlugins("readAccount",{"account":accountarray[index]});
-            if (decryptionsLeft <= 0){
-                accountsDecrypted();
-            }
-        }, defaultError);
+                }
+                decryptionsLeft -= 1;
+                callPlugins("readAccount",{"account":accountarray[index]});
+                if (decryptionsLeft <= 0){
+                    accountsDecrypted();
+                }
+            }, defaultError);
+        })(i);
     }
     for(var i = 0; i<fdata.length; i++) {
         var index = fdata[i]["index"];
@@ -622,7 +624,6 @@ $(document).ready(function(){
             var newpwd=encryptPassword(name, newpwd);
             other=encryptchar(other, secretkey);
             var enname=encryptchar(name,secretkey);
-            encryptAccount({}, secretkey, 
 
             $.post("rest/change.php",{name:enname,newpwd:newpwd,index:id,other:other},function(msg){ 
                 if(msg==1) {
