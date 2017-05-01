@@ -84,20 +84,14 @@ function sanitize_json(s){
     t=t.replace(/\n/g,'')
     return t.replace(/\r/g,'');
 }
-function encryptPassword(name, pass){
-    pass=gen_temp_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(name)),ALPHABET,pass);
-    return encryptchar(pass,secretkey);
-}
 function add_account(acc, pass, other, callback){
-    var sk=secretkey;
-    pass=encryptPassword(acc, pass);
-    other=JSON.parse(other);
+    other = JSON.parse(other);
     if(!("_system_passwordLastChangeTime" in other)) 
         other["_system_passwordLastChangeTime"] = Math.floor(Date.now() / 1000);
-    other=JSON.stringify(other);
-    other=encryptchar(other, sk);
-    acc=encryptchar(acc,sk);
-    $.post("rest/insert.php",{name:acc,newpwd:pass,other:other},callback);
+    other = JSON.stringify(other);
+    encryptAccount({"name":acc, "newpwd":pass, "other":other}, secretkey, function(origData, encryptedAccount){
+        $.post("rest/insert.php",encryptedAccount,callback);
+    }, defaultError);
 }
 function import_raw(json){
     json=JSON.parse(sanitize_json(json));
