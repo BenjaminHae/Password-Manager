@@ -462,13 +462,17 @@ function downloadf(id){
                     }
                     return new Blob(byteArrays, { type: contentType });
                 }
-                
-                var fkey = decryptPassword(fname,filedata['key']);
-                var data = decryptchar(filedata['data'],fkey);
-                var typedata = data.substring(5,data.search(";"));
-                data = data.substring(data.search(",")+1);
-                saveAs(base64toBlob(data,typedata),fname);
-                $("#messagewait").modal("hide");
+                decryptPassword({"name": fname, "enpassword": filedata['key']}, secretkey, function(pwData, fkey){
+                    decryptChar(filedata['data'], fkey, function(origData, data){
+                        var typedata = data.substring(5,data.search(";"));
+                        data = data.substring(data.search(",")+1);
+                        saveAs(base64toBlob(data,typedata),fname);
+                        $("#messagewait").modal("hide");
+                    }, function(data, routine, error){
+                        defaultError(data, routine, error);
+                        $("#messagewait").modal("hide");
+                    });
+                }, defaultError);
             }
         }
     });
@@ -586,7 +590,6 @@ $(document).ready(function(){
         setTimeout(process,50);
     });
     $("#editbtn").click(function(){ 
-        var newpwd;
         if($("#edititeminput").val()=="") {showMessage('warning',"Account entry can't be empty!", true); return;}
         $("#editbtn").attr("disabled",true);
         $("#edititeminput").attr("readonly",true);
@@ -616,9 +619,11 @@ $(document).ready(function(){
 
             other = JSON.stringify(other);
             var name = $("#edititeminput").val();
-            newpwd=encryptPassword(name, newpwd);
+            var newpwd=encryptPassword(name, newpwd);
             other=encryptchar(other, secretkey);
             var enname=encryptchar(name,secretkey);
+            encryptAccount({}, secretkey, 
+
             $.post("rest/change.php",{name:enname,newpwd:newpwd,index:id,other:other},function(msg){ 
                 if(msg==1) {
                     showMessage('success',"Data for "+name+" updated!");
@@ -699,7 +704,7 @@ $(document).ready(function(){
     $("#editAccountShowPassword").click(function(){
         $("#editAccountShowPassword").popover('hide');
         var id = parseInt($("#edit").data('id'));
-        decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]},function(data, thekey){
+        decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey, function(data, thekey){
         if (thekey==""){
             $("#edititeminputpw").val("Oops, some error occurs!");
             return;
@@ -908,7 +913,7 @@ function edit(row){
 function clicktoshow(id){ 
     timeout=default_timeout+Math.floor(Date.now() / 1000);
     id=parseInt(id);
-    decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]},function(data, thekey){
+    decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey, function(data, thekey){
         if (thekey==""){
             $("#"+id).text("Oops, some error occurs!");
             return;
