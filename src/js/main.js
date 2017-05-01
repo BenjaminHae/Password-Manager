@@ -273,6 +273,7 @@ function dataReady(data){
     var decryptionsLeft = accounts.length + fdata.length;
     if (decryptionsLeft <= 0) {
         accountsDecrypted();
+        return;
     }
     for(var i = 0; i<accounts.length; i++) {
         (function(i){
@@ -721,49 +722,65 @@ $(document).ready(function(){
             $("#changepw").attr("value", "Processing...");
             function process(){
                 var login_sig=String(pbkdf2_enc(reducedinfo($("#oldpassword").val(),default_letter_used), salt1, 500));
-                if(secretkey!=String(CryptoJS.SHA512(login_sig+salt2))) {showMessage('warning',"Incorrect Old Password!", true); return;}
+                if(secretkey!=String(CryptoJS.SHA512(login_sig+salt2))) {
+                    showMessage('warning',"Incorrect Old Password!", true); 
+                    return;
+                }
                 var newpass=$("#pwd").val();
                 login_sig=String(pbkdf2_enc(reducedinfo(newpass, default_letter_used), salt1, 500));
                 var newsecretkey=String(CryptoJS.SHA512(login_sig+salt2));
                 var postnewpass=pbkdf2_enc(login_sig, salt1, 500);
                 //NOTE: login_sig here is the secret_key generated when login.
                 var newconfkey=pbkdf2_enc(String(CryptoJS.SHA512(newpass+login_sig)), salt1, 500); 
-                var x,raw_pass,raw_fkey;
                 var temps;
                 var accarray= [];
-                for (x in accountarray)
-                {
-                    var tmpother=accountarray[x]["other"];
-                    accarray[x]={"name": encryptchar(accountarray[x]["name"],newsecretkey), "is_f":1, "fname": '',"other": encryptchar(JSON.stringify(tmpother),newsecretkey)};
-                    if(accountarray[x]["fname"]=='') {
-                        accarray[x]['is_f']=0;
-                    } 
-                    else {
-                        accarray[x]["fname"]=encryptchar(accountarray[x]["fname"],newsecretkey);
-                    }
-                    raw_fkey='1';
-                    raw_pass=decryptPassword(accountarray[x]["name"],accountarray[x]["enpassword"]);
-                    if(accountarray[x]["fname"]!='') {
-                        raw_fkey=decryptPassword(accountarray[x]['fname'],accountarray[x]['fkey']);
-                    }
-                    if (raw_pass==""||raw_fkey=='') {
-                        showMessage('danger',"FATAL ERROR WHEN TRYING TO DECRYPT ALL PASSWORDS", true);
-                        return;
-                    }
-                    raw_pass=gen_temp_pwd(newconfkey,PWsalt,String(CryptoJS.SHA512(accountarray[x]["name"])),ALPHABET,raw_pass);
-                    raw_fkey=gen_temp_pwd(newconfkey,PWsalt,String(CryptoJS.SHA512(accountarray[x]["fname"])),ALPHABET,raw_fkey);
-                    accarray[x]["newpwd"] = encryptchar(raw_pass,newsecretkey);
-                    accarray[x]["fk"] = encryptchar(raw_fkey,newsecretkey);
+                function finishPasswordChange() {
+                    $.post("rest/changeuserpw.php",{newpass:String(CryptoJS.SHA512(postnewpass+user)), accarray:JSON.stringify(accarray)},function(msg){ 
+                        if(msg==1) {
+                            alert("Change Password Successfully! Please login with your new password again.");
+                            quitpwd("Password changed, please relogin");
+                        } 
+                        else {
+                            showMessage('warning',"Fail to change your password, please try again.", true); 
+                        }
+                    });
                 }
-                $.post("rest/changeuserpw.php",{newpass:String(CryptoJS.SHA512(postnewpass+user)), accarray:JSON.stringify(accarray)},function(msg){ 
-                    if(msg==1) {
-                        alert("Change Password Successfully! Please login with your new password again.");
-                        quitpwd("Password changed, please relogin");
-                    } 
-                    else {
-                        showMessage('warning',"Fail to change your password, please try again.", true); 
-                    }
-                });
+                var decryptionsLeft = accountarray.length;
+                if (decryptionsLeft <= 0) {
+                    finishPasswordChange();
+                    return;
+                }
+                for (var x in accountarray) {
+                    (function(x, accarray){
+                        decryptPassword(accountarray[x], secretkey, function(account, raw_pass) {
+                            newAccount = {"name": account["name"], "fname": '',"other": JSON.stringify(account["other"])};
+                            newAccount["newpwd"] = raw_pass;
+
+                            var raw_fkey = '1';
+
+                            if(account["fname"] != '') {
+                                newAccount["fname"] = account["fname"];
+                                decryptPassword({"name":account['fname'], "enpassword":account['fkey']}, secretkey, function(origData, raw_fkey){
+                                    if (raw_pass == ""||raw_fkey =='') {
+                                        showMessage('danger',"FATAL ERROR WHEN TRYING TO DECRYPT ALL PASSWORDS", true);
+                                        return;
+                                    }
+                                    raw_fkey = gen_temp_pwd(newconfkey,PWsalt,String(CryptoJS.SHA512(account["fname"])),ALPHABET,raw_fkey);
+                                    newAccount["fk"] = raw_fkey;
+                                    encryptAccount(newAccount, newsecretkey, function(origData, encryptedAccount){
+                                        accarray[x] = encryptedAccount;
+                                        decryptionsLeft -= 1;
+                                        if (decryptionsLeft <= 0) {
+                                            finishPasswordChange();
+                                        }
+                                    }, defaultError);
+                                }, defaultError);
+                            }
+                            else
+                                insertFiles(newAccount, x, raw_fkey);
+                        }, defaultError);
+                    })(x, accarray);
+                }
             }
             setTimeout(process,50);
         }
