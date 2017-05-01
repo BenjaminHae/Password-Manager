@@ -6,7 +6,7 @@ function encryptChar(data, key, success, error){
         return;
     }
     var p = CryptoJS.AES.encrypt(data,key).toString();
-    success(data, p);
+    setTimeout(success, 1, data, p);
 }
 //data contains, value(possibly a json string with iv and encrypted string), key
 function decryptChar(data, key, success, error){ 
@@ -19,7 +19,7 @@ function decryptChar(data, key, success, error){
         return;
     }
     var p=CryptoJS.enc.Utf8.stringify(CryptoJS.AES.decrypt(data, key));
-    success(data, p);
+    setTimeout(success, 1, data, p);
 } 
 //data: password, salt, iterations
 function deriveKey(data, success, error){
@@ -30,11 +30,12 @@ function deriveKey(data, success, error){
     var hash = CryptoJS.SHA512(data["password"]);
     var salt = CryptoJS.SHA512(data["salt"]);
     var gen_key = CryptoJS.PBKDF2(hash, salt, { keySize: 512/32, iterations: data["iterations"] });   
-    success(data, gen_key);
+    setTimeout(success, 1, data, gen_key);
 }
 function decryptPassword(data, key, success, error){
     var origData = data;
     decryptChar(data["enpassword"], key, function(data, thekey){
+        // no timeout needed as it's already async by using decryptChar
         if (thekey==""){
             success(data, "");
         }
@@ -42,10 +43,11 @@ function decryptPassword(data, key, success, error){
     }, error);
 }
 function decryptAccount(data, key, success, error){
+    // no timeout needed as it's already async by using decryptChar
     var origData = data;
     var decryptedAccount = {"index": data["index"], "kss":data["kss"]};
     function isAccountFinished(){
-        for (item in data){
+        for (item in origData){
             if (!(item in decryptedAccount)) {
                 return false;
             }
@@ -58,6 +60,29 @@ function decryptAccount(data, key, success, error){
         }
         decryptChar(data[item], key, function(data, p){
             decryptedAccount[item] = p;
+            if (isAccountFinished()){
+                success(origData, decryptedAccount);
+            }
+        }, error);
+    }
+}
+function encryptAccount(data, key, success, error){
+    // no timeout needed as it's already async by using decryptChar
+    var origData = data;
+    var encryptedAccount = {};
+    if ("index" in data)
+        encryptedAccount["index"] = data["index"];
+    function isAccountFinished(){
+        for (item in origData){
+            if (!(item in encryptedAccount)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    for (item in data){
+        encryptChar(data[item], key, function(data, p){
+            encryptedAccount[item] = p;
             if (isAccountFinished()){
                 success(origData, decryptedAccount);
             }
