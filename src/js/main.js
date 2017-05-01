@@ -615,23 +615,22 @@ $(document).ready(function(){
 
             other = JSON.stringify(other);
             var name = $("#edititeminput").val();
-            var newpwd=encryptPassword(name, newpwd);
-            other=encryptchar(other, secretkey);
-            var enname=encryptchar(name,secretkey);
-
-            $.post("rest/change.php",{name:enname,newpwd:newpwd,index:id,other:other},function(msg){ 
-                if(msg==1) {
-                    showMessage('success',"Data for "+name+" updated!");
-                    $('#edit').modal('hide');
-                    reloadAccounts();
-                } 
-                else showMessage('warning',"Fail to update data for "+name+", please try again.", true);
-                $("#edititeminput").attr("readonly",false);
-                $("#editbtn").attr("disabled",false);
-                $("#edititeminputpw").attr("readonly",false);
-                for (x in fields)
-                    $("#edititeminput"+x).attr("readonly",false);
-            });
+            encryptAccount({"name":name,"newpwd":newpwd,"index":id,"other":other}, secretkey, function(origData, account){
+                $.post("rest/change.php", account, function(msg){ 
+                    if(msg == 1) {
+                        showMessage('success',"Data for "+name+" updated!");
+                        $('#edit').modal('hide');
+                        reloadAccounts();
+                    } 
+                    else 
+                        showMessage('warning',"Fail to update data for " + origData["name"] + ", please try again.", true);
+                    $("#edititeminput").attr("readonly",false);
+                    $("#editbtn").attr("disabled",false);
+                    $("#edititeminputpw").attr("readonly",false);
+                    for (x in fields)
+                        $("#edititeminput"+x).attr("readonly",false);
+                });
+            },defaultError);
         }
         setTimeout(process,50);
     }); 
