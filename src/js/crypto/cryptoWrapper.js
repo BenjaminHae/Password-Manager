@@ -90,7 +90,7 @@ function encryptAccount(data, key, success, error){
     encryptPassword({"name":origData["name"], "pass":origData["newpwd"]}, key, function(origPw, encPw){
         encryptedAccount["newpwd"] = encPw;
         if (isAccountFinished()){
-            success(origData, decryptedAccount);
+            success(origData, encryptedAccount);
         }
     }, error);
     for (item in data){
