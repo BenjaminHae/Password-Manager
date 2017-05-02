@@ -702,13 +702,13 @@ $(document).ready(function(){
         $("#editAccountShowPassword").popover('hide');
         var id = parseInt($("#edit").data('id'));
         decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey, function(data, thekey){
-        if (thekey==""){
-            $("#edititeminputpw").val("Oops, some error occurs!");
-            return;
-        }
-        $("#edititeminputpw").val(thekey);
-        $("#editAccountShowPassword").addClass("collapse");
-    }, defaultError);
+            if (thekey==""){
+                $("#edititeminputpw").val("Oops, some error occurs!");
+                return;
+            }
+            $("#edititeminputpw").val(thekey);
+            $("#editAccountShowPassword").addClass("collapse");
+        }, defaultError);
     });
     $("#delbtn").click(function(){
         delepw($("#edit").data('id'));
@@ -752,31 +752,30 @@ $(document).ready(function(){
                 for (var x in accountarray) {
                     (function(x, accarray){
                         decryptPassword(accountarray[x], secretkey, function(account, raw_pass) {
-                            newAccount = {"name": account["name"], "fname": '',"other": JSON.stringify(account["other"])};
-                            newAccount["newpwd"] = raw_pass;
-
+                            var newAccount = {"name": account["name"], "fname": account["fname"],"other": JSON.stringify(account["other"]), "newpwd": raw_pass};
                             var raw_fkey = '1';
-
-                            if(account["fname"] != '') {
-                                newAccount["fname"] = account["fname"];
-                                decryptPassword({"name":account['fname'], "enpassword":account['fkey']}, secretkey, function(origData, raw_fkey){
-                                    if (raw_pass == ""||raw_fkey =='') {
-                                        showMessage('danger',"FATAL ERROR WHEN TRYING TO DECRYPT ALL PASSWORDS", true);
-                                        return;
+                            function saveAccount(raw_fkey){
+                                if (raw_pass == ""||raw_fkey == '') {
+                                    showMessage('danger',"FATAL ERROR WHEN TRYING TO DECRYPT ALL PASSWORDS", true);
+                                    return;
+                                }
+                                raw_fkey = gen_temp_pwd(newconfkey,PWsalt,String(CryptoJS.SHA512(account["fname"])),ALPHABET,raw_fkey);
+                                newAccount["fk"] = raw_fkey;
+                                encryptAccount(newAccount, newsecretkey, function(origData, encryptedAccount){
+                                    accarray[x] = encryptedAccount;
+                                    decryptionsLeft -= 1;
+                                    if (decryptionsLeft <= 0) {
+                                        finishPasswordChange();
                                     }
-                                    raw_fkey = gen_temp_pwd(newconfkey,PWsalt,String(CryptoJS.SHA512(account["fname"])),ALPHABET,raw_fkey);
-                                    newAccount["fk"] = raw_fkey;
-                                    encryptAccount(newAccount, newsecretkey, function(origData, encryptedAccount){
-                                        accarray[x] = encryptedAccount;
-                                        decryptionsLeft -= 1;
-                                        if (decryptionsLeft <= 0) {
-                                            finishPasswordChange();
-                                        }
-                                    }, defaultError);
+                                }, defaultError);
+                            }
+                            if (newAccount["fname"] != "") {
+                                decryptPassword({"name":account['fname'], "enpassword":account['fkey']}, secretkey, function(origData, raw_fkey){ 
+                                    saveAccount(raw_fkey);
                                 }, defaultError);
                             }
                             else
-                                insertFiles(newAccount, x, raw_fkey);
+                                saveAccount("1");
                         }, defaultError);
                     })(x, accarray);
                 }
