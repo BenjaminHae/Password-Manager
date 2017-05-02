@@ -276,11 +276,10 @@ function dataReady(data){
         return;
     }
     for(var i = 0; i<accounts.length; i++) {
-        (function(i){
+        var index = accounts[i]["index"];
+        accountarray[index] = { "index":index, "other": {}, "fname": '' };
+        (function(index){
             decryptAccount(accounts[i], secretkey, function(origAccount, account){
-                var index = accounts[i]["index"];
-                accountarray[index] = { "index":index, "other": {} };
-                accountarray[index]["fname"]=''; 
                 accountarray[index]["name"] = account["name"];
                 accountarray[index]["enpassword"] = account["kss"];
                 if (account["additional"] != "") {
@@ -297,7 +296,7 @@ function dataReady(data){
                     accountsDecrypted();
                 }
             }, defaultError);
-        })(i);
+        })(index);
     }
     for(var i = 0; i<fdata.length; i++) {
         var index = fdata[i]["index"];
