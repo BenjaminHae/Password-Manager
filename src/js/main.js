@@ -744,7 +744,7 @@ $(document).ready(function(){
                         }
                     });
                 }
-                var decryptionsLeft = accountarray.length;
+                var decryptionsLeft = accountarray.length;//ToDo: Length is wrong!
                 if (decryptionsLeft <= 0) {
                     finishPasswordChange();
                     return;
@@ -752,7 +752,7 @@ $(document).ready(function(){
                 for (var x in accountarray) {
                     (function(x, accarray){
                         decryptPassword(accountarray[x], secretkey, function(account, raw_pass) {
-                            var newAccount = {"name": account["name"], "fname": account["fname"],"other": JSON.stringify(account["other"]), "newpwd": raw_pass};
+                            var newAccount = {"name": account["name"], "fname": account["fname"], "other": JSON.stringify(account["other"]), "newpwd": raw_pass};
                             var raw_fkey = '1';
                             function saveAccount(raw_fkey){
                                 if (raw_pass == ""||raw_fkey == '') {
