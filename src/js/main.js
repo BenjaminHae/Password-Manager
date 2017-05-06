@@ -730,7 +730,7 @@ $(document).ready(function(){
                 var newsecretkey=String(CryptoJS.SHA512(login_sig+salt2));
                 var postnewpass=pbkdf2_enc(login_sig, salt1, 500);
                 //NOTE: login_sig here is the secret_key generated when login.
-                var newconfkey=pbkdf2_enc(String(CryptoJS.SHA512(newpass+login_sig)), salt1, 500); 
+                var newconfkey = pbkdf2_enc(String(CryptoJS.SHA512(newpass+login_sig)), salt1, 500); 
                 var temps;
                 var accarray= [];
                 function finishPasswordChange() {
@@ -750,7 +750,7 @@ $(document).ready(function(){
                     return;
                 }
                 for (var x in accountarray) {
-                    (function(x, accarray){
+                    (function(x, accarray, newconfkey){
                         decryptPassword(accountarray[x], secretkey, function(account, raw_pass) {
                             var newAccount = {"name": account["name"], "fname": account["fname"], "other": JSON.stringify(account["other"]), "newpwd": raw_pass};
                             var raw_fkey = '1';
@@ -767,7 +767,7 @@ $(document).ready(function(){
                                     if (decryptionsLeft <= 0) {
                                         finishPasswordChange();
                                     }
-                                }, defaultError);
+                                }, defaultError, newconfkey);
                             }
                             if (newAccount["fname"] != "") {
                                 decryptPassword({"name":account['fname'], "enpassword":account['fkey']}, secretkey, function(origData, raw_fkey){ 
@@ -777,7 +777,7 @@ $(document).ready(function(){
                             else
                                 saveAccount("1");
                         }, defaultError);
-                    })(x, accarray);
+                    })(x, accarray, newconfkey);
                 }
             }
             setTimeout(process,50);

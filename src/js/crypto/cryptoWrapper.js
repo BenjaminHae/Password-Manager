@@ -43,7 +43,10 @@ function decryptPassword(data, key, success, error){
     }, error);
 }
 function encryptPassword(data, key, success, error){
-    pass = gen_temp_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(data["name"])),ALPHABET,data["pass"]);
+    var confkey = getconfkey(PWsalt);
+    if ("confkey" in data)
+        confkey = data["confkey"];
+    pass = gen_temp_pwd(confkey,PWsalt,String(CryptoJS.SHA512(data["name"])),ALPHABET,data["pass"]);
     encryptChar(pass, secretkey, success, error);
 }
 function decryptAccount(data, key, success, error){
@@ -72,7 +75,7 @@ function decryptAccount(data, key, success, error){
         })(data, item, key, decryptedAccount);
     }
 }
-function encryptAccount(data, key, success, error){
+function encryptAccount(data, key, success, error, confkey){
     // no timeout needed as it's already async by using decryptChar
     var origData = data;
     var encryptedAccount = {};
@@ -87,7 +90,11 @@ function encryptAccount(data, key, success, error){
         }
         return true;
     }
-    encryptPassword({"name":origData["name"], "pass":origData["newpwd"]}, key, function(origPw, encPw){
+    var passwordData = {"name":origData["name"], "pass":origData["newpwd"]};
+    if (confkey !== undefined) {
+        passwordData["confkey"] = confkey;
+    }
+    encryptPassword(passwordData, key, function(origPw, encPw){
         encryptedAccount["newpwd"] = encPw;
         if (isAccountFinished()){
             success(origData, encryptedAccount);
