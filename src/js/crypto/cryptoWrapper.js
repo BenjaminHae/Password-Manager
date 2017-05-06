@@ -47,7 +47,7 @@ function encryptPassword(data, key, success, error){
     if ("confkey" in data)
         confkey = data["confkey"];
     pass = gen_temp_pwd(confkey,PWsalt,String(CryptoJS.SHA512(data["name"])),ALPHABET,data["pass"]);
-    encryptChar(pass, secretkey, success, error);
+    encryptChar(pass, key, success, error);
 }
 function decryptAccount(data, key, success, error){
     // no timeout needed as it's already async by using decryptChar
