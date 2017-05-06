@@ -744,7 +744,7 @@ $(document).ready(function(){
                         }
                     });
                 }
-                var decryptionsLeft = accountarray.length;//ToDo: Length is wrong!
+                var decryptionsLeft = Object.keys(accountarray).length;
                 if (decryptionsLeft <= 0) {
                     finishPasswordChange();
                     return;
