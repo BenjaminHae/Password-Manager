@@ -671,16 +671,30 @@ $(document).ready(function(){
             }
             function process()
             {
-                p.data=encryptchar(JSON.stringify(p.data),pbkdf2_enc(a,PWsalt,500));
-                p.fdata=encryptchar(JSON.stringify(p.fdata),pbkdf2_enc(a,PWsalt,500));
-                $("#backuppwdpb").attr('aria-valuenow',99);
-                $("#backuppwdpb").css('width','99%');
-                var blob = new Blob([JSON.stringify(p)], {type: "text/plain;charset=utf-8"});
-                saveAs(blob, "backup.txt");
+                var done = 2;
+                function processFinished(){
+                    $("#backuppwdpb").attr('aria-valuenow',99);
+                    $("#backuppwdpb").css('width','99%');
+                    var blob = new Blob([JSON.stringify(p)], {type: "text/plain;charset=utf-8"});
+                    saveAs(blob, "backup.txt");
 
-                $("#backuppwdbtn").attr('disabled',false);
-                $("#fileincludeckb").attr('disabled',false);
-                timeout=default_timeout+Math.floor(Date.now() / 1000);
+                    $("#backuppwdbtn").attr('disabled',false);
+                    $("#fileincludeckb").attr('disabled',false);
+                    timeout=default_timeout+Math.floor(Date.now() / 1000);
+                }
+                pkey = pbkdf2_enc(a, PWsalt, 500);
+                encryptChar(JSON.stringify(p.data), pkey, function(origData, encData){
+                    p.data = encData;
+                    done -= 1;
+                    if (done <= 0)
+                        processFinished();
+                }, defaultError);
+                encryptChar(JSON.stringify(p.fdata), pkey, function(origData, encData){
+                    p.fdata = encData;
+                    done -= 1;
+                    if (done <= 0)
+                        processFinished();
+                }, defaultError);
             }
             function first(callback)
             {
