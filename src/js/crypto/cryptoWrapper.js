@@ -135,15 +135,15 @@ function encryptFile(data, key, success, error) {
     }, error);
 
     encryptChar(origData["data"], origData["fkey"], function(data, p){
-        encryptedAccount["data"] = p;
-        if (isAccountFinished()){
-            success(origData, encryptedAccount);
+        encryptedFile["data"] = p;
+        if (isFileFinished()){
+            success(origData, encryptedFile);
         }
     }, error);
     encryptChar(origData["fname"], secretkey, function(data, p){
-        encryptedAccount["fname"] = p;
-        if (isAccountFinished()){
-            success(origData, encryptedAccount);
+        encryptedFile["fname"] = p;
+        if (isFileFinished()){
+            success(origData, encryptedFile);
         }
 
     }, error);
