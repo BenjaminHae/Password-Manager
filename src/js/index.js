@@ -140,7 +140,7 @@ function dataReady(data){
                         }else if(msg==9){
                             deriveKey({"password":SHA512(pwd+secretkey), "salt":JSsalt, "iterations":500}, function(confkey){
                                 setCookie("username",user);
-                                setpwdstore(secretkey,confkey,PWsalt);                
+                                setpwdstore(secretkey,String(confkey),PWsalt);                
                                 window.location.href="./password.php";
                             }, defaultError);
                         }else{
