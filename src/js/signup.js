@@ -40,7 +40,6 @@ function dataReady(data){
         $("#chk").attr("disabled", true);
         $("#chk").attr("value", "Wait");
         function process(){
-            var login_sig=String(pbkdf2_enc(reducedinfo($("#pwd").val(),default_letter_used),JSsalt,500));
             deriveKey({"password":reducedinfo($("#pwd").val(),default_letter_used), "salt":JSsalt, "iterations":500}, function(derivedKey){
                 deriveKey({"password":String(derivedKey), "salt":JSsalt, "iterations":500}, function(login_sig){
                     $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(String(login_sig)+$("#user").val()),  user: $("#user").val()},function(msg){ 
