@@ -4,6 +4,11 @@ var session_token;
 var usepin;
 var randomLoginStamp;
 var default_letter_used;
+function defaultError(data, routine, error){
+    alert("Error in "+routine+": "+error+"\r\nDetails in console.");
+    console.log("Error in "+routine+": "+error+"\r\nData:");
+    console.log(data);
+}
 function isSupportFileApi() {
     if(window.File && window.FileList && window.FileReader && window.Blob) {
         return true;
@@ -79,15 +84,31 @@ function dataReady(data){
         $("#pinlogin").val("Wait");
         pin=$("#pin").val();
         $.post("rest/getpinpk.php",{user:getcookie('username'),device:getcookie('device'),sig:SHA512(SHA512(pin+localStorage.pinsalt)+randomLoginStamp)},function(msg){
-            if(msg == '0') {$("#usepin").modal("hide");delpinstore();$("#user").focus();return;}
-            if(msg == '1') {$("#pin").val('');$("#pinerrorhint").show();$("#pinlogin").attr("disabled", false);$("#pinlogin").val("Login"); return;}
+            if(msg == '0') {
+                $("#usepin").modal("hide");
+                delpinstore();
+                $("#user").focus();
+                return;
+            }
+            else if(msg == '1') {
+                $("#pin").val('');
+                $("#pinerrorhint").show();
+                $("#pinlogin").attr("disabled", false);
+                $("#pinlogin").val("Login"); 
+                return;
+            }
             pwdsk=decryptchar(localStorage.en_login_sec,pin+msg);
             confkey=decryptchar(localStorage.en_login_conf,pin+msg)
-                $.post("rest/check.php",{pwd:SHA512(SHA512(pbkdf2_enc(pwdsk,JSsalt,500)+getcookie('username')) + randomLoginStamp),  user: getcookie('username')},function(msg){
-                    if(msg!=9) {$("#usepin").modal("hide");delpinstore();$("#user").focus();return;}
-                    setpwdstore(pwdsk,confkey,PWsalt);
-                    window.location.href="./password.php";
-                });
+            $.post("rest/check.php",{pwd:SHA512(SHA512(pbkdf2_enc(pwdsk,JSsalt,500)+getcookie('username')) + randomLoginStamp),  user: getcookie('username')},function(msg){
+                if(msg!=9) {
+                    $("#usepin").modal("hide");
+                    delpinstore();
+                    $("#user").focus();
+                    return;
+                }
+                setpwdstore(pwdsk,confkey,PWsalt);
+                window.location.href="./password.php";
+            });
         });
     });
     $("#loginform").on('submit',function(e){ 
@@ -100,33 +121,37 @@ function dataReady(data){
             var pwd = $("#pwd").val();
 
             var secretkey='';
-            var confkey='';
-            var login_sig=String(pbkdf2_enc(reducedinfo(pwd,default_letter_used),JSsalt,500));
-            secretkey=login_sig;
-            login_sig=pbkdf2_enc(login_sig,JSsalt,500);
-            $.post("rest/check.php",{pwd:SHA512(login_sig+user),  user: user},function(msg){
-                $(".errorhint").hide();
-                if(msg==0){
-                    $("#nouser").show();
-                    $("#chk").attr("value", "Login");
-                    $("#chk").attr("disabled", false);
-                }else if(msg==7){
-                    $("#blockip").show();
-                }else if(msg==8){
-                    $("#accountban").show();
-                    $("#chk").attr("value", "Login");
-                    $("#chk").attr("disabled", false);
-                }else if(msg==9){
-                    confkey=pbkdf2_enc(SHA512(pwd+secretkey),JSsalt,500);
-                    setCookie("username",user);
-                    setpwdstore(secretkey,confkey,PWsalt);                
-                    window.location.href="./password.php";
-                }else{
-                    $("#othererror").show();
-                    $("#chk").attr("value", "Login");
-                    $("#chk").attr("disabled", false);
-                }
-            });
+            //derive Secret key
+            deriveKey({"password":reducedinfo(pwd,default_letter_used), "salt":JSsalt, "iterations":500}, function(derivedKey){
+                secretkey = String(derivedKey);
+                deriveKey({"password":secretkey, "salt":JSsalt, "iterations":500}, function(login_sig){
+                    $.post("rest/check.php",{pwd:SHA512(login_sig+user),  user: user},function(msg){
+                        $(".errorhint").hide();
+                        if(msg==0){
+                            $("#nouser").show();
+                            $("#chk").attr("value", "Login");
+                            $("#chk").attr("disabled", false);
+                        }else if(msg==7){
+                            $("#blockip").show();
+                        }else if(msg==8){
+                            $("#accountban").show();
+                            $("#chk").attr("value", "Login");
+                            $("#chk").attr("disabled", false);
+                        }else if(msg==9){
+                            deriveKey({"password":SHA512(pwd+secretkey), "salt":JSsalt, "iterations":500}, function(confkey){
+                                setCookie("username",user);
+                                setpwdstore(secretkey,confkey,PWsalt);                
+                                window.location.href="./password.php";
+                            }, defaultError);
+                        }else{
+                            $("#othererror").show();
+                            $("#chk").attr("value", "Login");
+                            $("#chk").attr("disabled", false);
+                        }
+                    });
+
+                }, defaultError);
+            }, defaultError);
         }
         setTimeout(process,50);
     }); 
