@@ -501,14 +501,19 @@ $(document).ready(function(){
         timeout=default_timeout+Math.floor(Date.now() / 1000);
         function process()
         {
-            $.post("rest/setpin.php",{user:getcookie('username'),device:device,sig:String(CryptoJS.SHA512(pin+salt))},function(msg){
+            $.post("rest/setpin.php", {user:getcookie('username'), device:device, sig:String(CryptoJS.SHA512(pin+salt))}, function(msg){
                 if(msg=='0'){
                     showMessage('warning', 'ERROR set PIN, try again later!', true);
                     $('#pin').modal('hide');
-                }else{
-                    setPINstore(device,salt,encryptchar(getpwdstore(PWsalt),pin+msg),encryptchar(getconfkey(PWsalt),pin+msg));
-                    showMessage('success', 'PIN set, use PIN to login next time');
-                    $('#pin').modal('hide');
+                }
+                else{
+                    encryptChar(getpwdstore(PWsalt), pin+msg, function(origData, encryptsec){
+                        encryptChar(getconfkey(PWsalt), pin+msg, function(origData, encryptconf){
+                            setPINstore(device, salt, encryptsec, encryptconf);
+                            showMessage('success', 'PIN set, use PIN to login next time');
+                            $('#pin').modal('hide');
+                        }, defaultError);
+                    }, defaultError);
                 }
             });
         }
