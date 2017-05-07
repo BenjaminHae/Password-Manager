@@ -112,13 +112,15 @@ function import_raw(json){
     }
     function add_acc_file(acc,pass,other,fname,fdata){
         function addfile(msg){
-            if(msg==0) showMessage('warning',"Fail to add "+acc+", please try again manually later.", true); else{
-            var fkey=getpwd(default_letter_used,Math.floor(Math.random()*18)+19);
-            var enfkey=encryptPassword(fname,fkey);
-            var endata=encryptchar(fdata,fkey);
-            var enfname=encryptchar(fname,secretkey);
-            $.post('rest/uploadfile.php',{id:msg,fkey:enfkey,fname:enfname,data:endata},function(msg){
-            if(msg!='1') showMessage('warning',"Fail to add file for "+acc+", please try again manually later.", true);});
+            if(msg==0) 
+                showMessage('warning',"Fail to add "+acc+", please try again manually later.", true); 
+            else{
+                encryptFile({id:msg, fname:fname, data:fdata}, secretkey, function(origData, encFile){
+                    $.post('rest/uploadfile.php',encFile,function(msg){
+                        if(msg!='1')
+                            showMessage('warning',"Fail to add file for " + acc + ", please try again manually later.", true);
+                    });
+                }, defaultError);
             }
         }
         if(acc==''||pass==''||fname=='') {
@@ -840,16 +842,26 @@ $(document).ready(function(){
                     reader.onload = function (e) {
                         var data = e.target.result;
                         try{
-                            var fkey=getpwd(default_letter_used,Math.floor(Math.random()*18)+19);
-                            var enfkey=encryptPassword(fname,fkey);
-                            var endata=encryptchar(data,fkey);
-                            var enfname=encryptchar(fname,secretkey);
                             $("#showdetails").modal("hide");
-                            $.post('rest/uploadfile.php',{id:fileid,fkey:enfkey,fname:enfname,data:endata},function(msg){
-                                if(msg=='1') {$('#uploadfiledlg').modal("hide"); showMessage('success','File uploaded!', false); reloadAccounts();}
-                                else {$('#uploadfiledlg').modal("hide"); showMessage('danger','ERROR! Try again!', false); reloadAccounts();}
-                            });
-                        }catch (error) {$('#uploadfiledlg').modal("hide"); showMessage('warning','Some error occurs!', true); reloadAccounts();}
+                            encryptFile({"id":fileid, "fname":fname, "data":data}, secretkey, function(origData, encFile){
+                                $.post('rest/uploadfile.php',encFile,function(msg){
+                                    if(msg=='1') {
+                                        $('#uploadfiledlg').modal("hide"); 
+                                        showMessage('success','File uploaded!', false); 
+                                    }
+                                    else {
+                                        $('#uploadfiledlg').modal("hide"); 
+                                        showMessage('danger','ERROR! Try again!', false); 
+                                    }
+                                    reloadAccounts();
+                                });
+                            }, defaultError);
+                        }
+                        catch (error) {
+                            $('#uploadfiledlg').modal("hide"); 
+                            showMessage('warning','Some error occurs!', true); 
+                            reloadAccounts();
+                        }
                     }
                     reader.onerror = function (e) {
                         showMessage('warning','Error reading file!', true);

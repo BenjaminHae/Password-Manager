@@ -80,7 +80,7 @@ function encryptAccount(data, key, success, error, confkey){
     var origData = data;
     var encryptedAccount = {};
     if ("index" in data) {
-        encryptedAccount["index"] = origData["index"];
+        encryptedAccount["index"] = data["index"];
     }
     function isAccountFinished(){
         for (item in origData){
@@ -113,4 +113,38 @@ function encryptAccount(data, key, success, error, confkey){
             }, error);
         })(data, item, key, encryptedAccount);
     }
+}
+function encryptFile(data, key, success, error) {
+    var origData = data;
+    var encryptedFile = { "id":data["id"]};
+    function isFileFinished(){
+        for (item in origData){
+            if (!(item in encryptedFile)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    var origData["fkey"] = getpwd(default_letter_used, Math.floor(Math.random() * 18) + 19);
+
+    encryptPassword(origData["fkey"], key, function(origPw, encPw){
+        encryptedFile["fkey"] = encPw;
+        if (isFileFinished()){
+            success(origData, encryptedFile);
+        }
+    }, error);
+
+    encryptChar(origData["data"], origData["fkey"], function(data, p){
+        encryptedAccount["data"] = p;
+        if (isAccountFinished()){
+            success(origData, encryptedAccount);
+        }
+    }, error);
+    encryptChar(origData["fname"], secretkey, function(data, p){
+        encryptedAccount["fname"] = p;
+        if (isAccountFinished()){
+            success(origData, encryptedAccount);
+        }
+
+    }, error);
 }
