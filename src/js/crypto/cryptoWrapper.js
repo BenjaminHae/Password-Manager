@@ -32,6 +32,9 @@ function deriveKey(data, success, error){
     var gen_key = CryptoJS.PBKDF2(hash, salt, { keySize: 512/32, iterations: data["iterations"] });   
     setTimeout(success, 1, data, gen_key);
 }
+function SHA512(value){
+    return String(CryptoJS.SHA512(value));
+}
 function decryptPassword(data, key, success, error){
     var origData = data;
     decryptChar(data["enpassword"], key, function(data, thekey){
@@ -147,7 +150,4 @@ function encryptFile(data, key, success, error) {
         }
 
     }, error);
-}
-function SHA512(value){
-    return String(CryptoJS.SHA512(value));
 }
