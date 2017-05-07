@@ -148,3 +148,6 @@ function encryptFile(data, key, success, error) {
 
     }, error);
 }
+function SHA512(value){
+    return String(CryptoJS.SHA512(value));
+}
