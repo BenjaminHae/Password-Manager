@@ -245,7 +245,7 @@ function dataReady(data){
         quitpwd("Login failed, due to missing secretkey");
         return;
     }
-    secretkey=String(CryptoJS.SHA512(secretkey0+salt2));
+    secretkey=SHA512(secretkey0+salt2);
     
     // show last succesfull Login
     if (!seenLoginInformation) {
@@ -501,7 +501,7 @@ $(document).ready(function(){
         timeout=default_timeout+Math.floor(Date.now() / 1000);
         function process()
         {
-            $.post("rest/setpin.php", {user:getcookie('username'), device:device, sig:String(CryptoJS.SHA512(pin+salt))}, function(msg){
+            $.post("rest/setpin.php", {user:getcookie('username'), device:device, sig:SHA512(pin+salt)}, function(msg){
                 if(msg=='0'){
                     showMessage('warning', 'ERROR set PIN, try again later!', true);
                     $('#pin').modal('hide');
@@ -742,20 +742,20 @@ $(document).ready(function(){
             $("#changepw").attr("value", "Processing...");
             function process(){
                 var login_sig=String(pbkdf2_enc(reducedinfo($("#oldpassword").val(),default_letter_used), salt1, 500));
-                if(secretkey!=String(CryptoJS.SHA512(login_sig+salt2))) {
+                if(secretkey!=SHA512(login_sig+salt2)) {
                     showMessage('warning',"Incorrect Old Password!", true); 
                     return;
                 }
                 var newpass=$("#pwd").val();
                 login_sig=String(pbkdf2_enc(reducedinfo(newpass, default_letter_used), salt1, 500));
-                var newsecretkey=String(CryptoJS.SHA512(login_sig+salt2));
+                var newsecretkey=SHA512(login_sig+salt2);
                 var postnewpass=pbkdf2_enc(login_sig, salt1, 500);
                 //NOTE: login_sig here is the secret_key generated when login.
-                var newconfkey = pbkdf2_enc(String(CryptoJS.SHA512(newpass+login_sig)), salt1, 500); 
+                var newconfkey = pbkdf2_enc(SHA512(newpass+login_sig), salt1, 500); 
                 var temps;
                 var accarray= [];
                 function finishPasswordChange() {
-                    $.post("rest/changeuserpw.php",{newpass:String(CryptoJS.SHA512(postnewpass+user)), accarray:JSON.stringify(accarray)},function(msg){ 
+                    $.post("rest/changeuserpw.php",{newpass:SHA512(postnewpass+user), accarray:JSON.stringify(accarray)},function(msg){ 
                         if(msg==1) {
                             alert("Change Password Successfully! Please login with your new password again.");
                             quitpwd("Password changed, please relogin");
@@ -780,7 +780,7 @@ $(document).ready(function(){
                                     showMessage('danger',"FATAL ERROR WHEN TRYING TO DECRYPT ALL PASSWORDS", true);
                                     return;
                                 }
-                                raw_fkey = gen_temp_pwd(newconfkey,PWsalt,String(CryptoJS.SHA512(account["fname"])),ALPHABET,raw_fkey);
+                                raw_fkey = gen_temp_pwd(newconfkey,PWsalt,SHA512(account["fname"]),ALPHABET,raw_fkey);
                                 newAccount["fk"] = raw_fkey;
                                 encryptAccount(newAccount, newsecretkey, function(origData, encryptedAccount){
                                     accarray[x] = encryptedAccount;

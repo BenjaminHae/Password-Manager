@@ -65,8 +65,8 @@ function gen_key()
     var i;
     var pass=$("#pwd").val();
 	secretkey=String(pbkdf2_enc(reducedinfo(pass,ALPHABET),JSsalt,500));
-    confkey=pbkdf2_enc(String(CryptoJS.SHA512(pass+secretkey)),JSsalt,500);
-    secretkey=String(CryptoJS.SHA512(secretkey+PWsalt));
+    confkey=pbkdf2_enc(SHA512(pass+secretkey),JSsalt,500);
+    secretkey=SHA512(secretkey+PWsalt);
     dkey=pbkdf2_enc(secretkey,PWsalt,500);
     for(i=0;i<=30;i++) dkey=pbkdf2_enc(dkey,PWsalt,500);
 }
@@ -147,7 +147,7 @@ function gen_pass_array(account_array,enc_pass_array)
             tempchar="Oops, there's some errors!";
         }else{
             name=account_array[x];
-            tempchar=get_orig_pwd(confkey,PWsalt,String(CryptoJS.SHA512(name)),ALPHABET,tempchar);
+            tempchar=get_orig_pwd(confkey,PWsalt,SHA512(name),ALPHABET,tempchar);
         }
         pass_array[x]=tempchar;
     }
@@ -167,7 +167,7 @@ function gen_fkey_array(fname_array,enc_fkey_array)
             tempchar="Oops, there's some errors!";
         }else{
             name=fname_array[x];
-            tempchar=get_orig_pwd(confkey,PWsalt,String(CryptoJS.SHA512(name)),ALPHABET,tempchar);
+            tempchar=get_orig_pwd(confkey,PWsalt,SHA512(name),ALPHABET,tempchar);
         }
         pass_array[x]=tempchar;
     }
