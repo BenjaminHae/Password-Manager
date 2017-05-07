@@ -127,7 +127,7 @@ function encryptFile(data, key, success, error) {
     }
     origData["fkey"] = getpwd(default_letter_used, Math.floor(Math.random() * 18) + 19);
 
-    encryptPassword(origData["fkey"], key, function(origPw, encPw){
+    encryptPassword({"pass":origData["fkey"], "name":origData["fname"]}, key, function(origPw, encPw){
         encryptedFile["fkey"] = encPw;
         if (isFileFinished()){
             success(origData, encryptedFile);
