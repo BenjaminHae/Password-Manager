@@ -41,8 +41,8 @@ function dataReady(data){
         $("#chk").attr("value", "Wait");
         function process(){
             deriveKey({"password":reducedinfo($("#pwd").val(),default_letter_used), "salt":JSsalt, "iterations":500}, function(derivedKey){
-                deriveKey({"password":String(derivedKey), "salt":JSsalt, "iterations":500}, function(login_sig){
-                    $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(String(login_sig)+$("#user").val()),  user: $("#user").val()},function(msg){ 
+                deriveKey({"password":derivedKey, "salt":JSsalt, "iterations":500}, function(login_sig){
+                    $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(login_sig+$("#user").val()),  user: $("#user").val()},function(msg){ 
                         if(msg==0){
                             alert("User name already occupied, please choose another user name.");
                         }
