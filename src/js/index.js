@@ -123,7 +123,7 @@ function dataReady(data){
             var secretkey='';
             //derive Secret key
             deriveKey({"password":reducedinfo(pwd,default_letter_used), "salt":JSsalt, "iterations":500}, function(derivedKey){
-                secretkey = derivedKey;
+                secretkey = exportKey(derivedKey);
                 deriveKey({"password":secretkey, "salt":JSsalt, "iterations":500}, function(login_sig){
                     $.post("rest/check.php",{pwd:SHA512(exportKey(login_sig)+user),  user: user},function(msg){
                         $(".errorhint").hide();
