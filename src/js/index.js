@@ -125,7 +125,7 @@ function dataReady(data){
             deriveKey({"password":reducedinfo(pwd,default_letter_used), "salt":JSsalt, "iterations":500}, function(derivedKey){
                 secretkey = derivedKey;
                 deriveKey({"password":secretkey, "salt":JSsalt, "iterations":500}, function(login_sig){
-                    $.post("rest/check.php",{pwd:SHA512(login_sig+user),  user: user},function(msg){
+                    $.post("rest/check.php",{pwd:SHA512(exportKey(login_sig)+user),  user: user},function(msg){
                         $(".errorhint").hide();
                         if(msg==0){
                             $("#nouser").show();
@@ -138,9 +138,9 @@ function dataReady(data){
                             $("#chk").attr("value", "Login");
                             $("#chk").attr("disabled", false);
                         }else if(msg==9){
-                            deriveKey({"password":SHA512(pwd+secretkey), "salt":JSsalt, "iterations":500}, function(confkey){
+                            deriveKey({"password":SHA512(pwd+exportKey(secretkey)), "salt":JSsalt, "iterations":500}, function(confkey){
                                 setCookie("username",user);
-                                setpwdstore(secretkey,confkey,PWsalt);                
+                                setpwdstore(secretkey,exportKey(confkey),PWsalt);                
                                 window.location.href="./password.php";
                             }, defaultError);
                         }else{

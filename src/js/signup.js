@@ -42,7 +42,7 @@ function dataReady(data){
         function process(){
             deriveKey({"password":reducedinfo($("#pwd").val(),default_letter_used), "salt":JSsalt, "iterations":500}, function(derivedKey){
                 deriveKey({"password":derivedKey, "salt":JSsalt, "iterations":500}, function(login_sig){
-                    $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(login_sig+$("#user").val()),  user: $("#user").val()},function(msg){ 
+                    $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(exportKey(login_sig)+$("#user").val()),  user: $("#user").val()},function(msg){ 
                         if(msg==0){
                             alert("User name already occupied, please choose another user name.");
                         }

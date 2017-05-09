@@ -30,7 +30,10 @@ function deriveKey(data, success, error){
     var hash = CryptoJS.SHA512(data["password"]);
     var salt = CryptoJS.SHA512(data["salt"]);
     var gen_key = CryptoJS.PBKDF2(hash, salt, { keySize: 512/32, iterations: data["iterations"] });   
-    setTimeout(success, 1, String(gen_key));
+    setTimeout(success, 1, gen_key);
+}
+function exportKey(key){
+    return String(key);
 }
 function SHA512(value){
     return String(CryptoJS.SHA512(value));
