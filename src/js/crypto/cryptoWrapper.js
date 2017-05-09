@@ -1,40 +1,51 @@
 //data contains, value, key and possibly iv or salt
 //success is a function(data, result), with data being the input data and result being a string(possible of a json object containing salt/iv and the encrypted char)
 function encryptChar(data, key){
-    return new Promise( function(success, error) {
-        if(key == ""){
-            error({"data":data, "routine":"encryptChar", "error":"empty key detected"});
-        }
-        var p = CryptoJS.AES.encrypt(data,key).toString();
-        success({"origData":data, "result":p});
-    });
+    var iv = window.crypto.getRandomValues(new Uint8Array(12));
+    var abdata = window.Unibabel.strToUtf8Arr(data).buffer;
+    window.crypto.subtle.encrypt(
+        {
+            name: "AES-GCM",
+            iv: iv,
+        },
+        key, //from generateKey or importKey above
+        abdata //ArrayBuffer of data you want to encrypt
+    )
+        .then(function(encrypted){
+            success(data, JSON.stringify({"iv":iv, "data":encrypted}));
+        })
+        .catch(function(err){
+            error(data, "encryptchar", err);
+        });
 }
 //data contains, value(possibly a json string with iv and encrypted string), key
 function decryptChar(data, key){ 
-    return new Promise( function(success, error) {
-        if(data==""){
-            success({"data":data, "result":""});
-        }
-        if(key == ""){
-            error({"data":data, "routine":"decryptChar", "error":"empty key detected"});
-            return;
-        }
-        var p=CryptoJS.enc.Utf8.stringify(CryptoJS.AES.decrypt(data, key));
-        success({"data":data, "result":p});
-    });
-} 
+    var crypt = JSON.parse(data);
+    window.crypto.subtle.decrypt(
+        {
+            name: "AES-GCM",
+            iv: crypt["iv"], //The initialization vector you used to encrypt
+        },
+        key, //from generateKey or importKey above
+        crypt["data"] //ArrayBuffer of the data
+    )
+        .then(function(decrypted){
+            success(data, window.Unibabel.utf8ArrToStr(new Uint8Array(decrypted)));
+        })
+        .catch(function(err){
+            error(data, "decryptchar", err);
+        });
+}
 //data: password, salt, iterations
-function deriveKey(data){
-    return new Promise( function(success, error) {
-        if(data["password"]==""||data["salt"]==""){
-            error({"data":data, "routine":"deriveKey", "error":"empty key detected"});
-            return;
-        }
-        var hash = CryptoJS.SHA512(data["password"]);
-        var salt = CryptoJS.SHA512(data["salt"]);
-        var gen_key = CryptoJS.PBKDF2(hash, salt, { keySize: 512/32, iterations: data["iterations"] });   
-        success({"data":data, "result":gen_key});
-    });
+function deriveKey(data, success, error){
+    if(data["password"]==""||data["salt"]==""){
+        error(data, "deriveKey", "empty key detected");
+        return;
+    }
+    var hash = CryptoJS.SHA512(data["password"]);
+    var salt = CryptoJS.SHA512(data["salt"]);
+    var gen_key = CryptoJS.PBKDF2(hash, salt, { keySize: 512/32, iterations: data["iterations"] });   
+    setTimeout(success, 1, gen_key);
 }
 function exportKey(key){
     return new Promise( function(success, error) {
