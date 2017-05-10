@@ -38,14 +38,31 @@ function decryptChar(data, key){
 }
 //data: password, salt, iterations
 function deriveKey(data, success, error){
-    if(data["password"]==""||data["salt"]==""){
-        error(data, "deriveKey", "empty key detected");
-        return;
-    }
-    var hash = CryptoJS.SHA512(data["password"]);
-    var salt = CryptoJS.SHA512(data["salt"]);
-    var gen_key = CryptoJS.PBKDF2(hash, salt, { keySize: 512/32, iterations: data["iterations"] });   
-    setTimeout(success, 1, gen_key);
+    var abdata = window.Unibabel.strToUtf8Arr(data["password"]).buffer;
+    var saltBuffer = window.Unibabel.strToUtf8Arr(data["salt"]).buffer;
+	window.crypto.subtle.importKey(
+			'raw', 
+			abdata, 
+			{name: 'PBKDF2'}, 
+			false, 
+			['deriveBits', 'deriveKey']
+			).then(function(key) {
+		return window.crypto.subtle.deriveKey(
+				{ "name": 'PBKDF2',
+					"salt": saltBuffer,
+					"iterations": 500,
+					"hash": 'SHA-512'
+				},
+				key,
+				{ "name": 'AES-CBC', "length": 256 },
+				true,
+				[ "encrypt", "decrypt" ]
+					)
+	}).then(function (webKey) {
+		return crypto.subtle.exportKey("raw", webKey);
+	}).then(function (buffer) {
+            success(data, window.Unibabel.utf8ArrToStr(new Uint8Array(buffer)));
+	});
 }
 function exportKey(key){
     return new Promise( function(success, error) {
