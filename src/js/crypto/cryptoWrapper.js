@@ -65,9 +65,7 @@ function deriveKey(data, success, error){
 	});
 }
 function exportKey(key){
-    return new Promise( function(success, error) {
-        success({"data":key, "result":key});
-    });
+    return key;
 }
 function importKey(key){
     var abdata = convertStringToArrayBufferView(key).buffer;
