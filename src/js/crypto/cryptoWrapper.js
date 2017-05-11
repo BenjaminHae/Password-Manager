@@ -36,7 +36,7 @@ function exportKey(key){
     return String(key);
 }
 function importKey(key){
-    return String(key);
+    return SHA512(key+salt2);
 }
 function SHA512(value){
     return String(CryptoJS.SHA512(value));

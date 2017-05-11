@@ -245,7 +245,7 @@ function dataReady(data){
         quitpwd("Login failed, due to missing secretkey");
         return;
     }
-    secretkey=SHA512(secretkey0+salt2);
+    secretkey=importKey(secretkey0);
     
     // show last succesfull Login
     if (!seenLoginInformation) {
