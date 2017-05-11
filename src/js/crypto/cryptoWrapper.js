@@ -2,7 +2,7 @@
 //success is a function(data, result), with data being the input data and result being a string(possible of a json object containing salt/iv and the encrypted char)
 function encryptChar(data, key){
     var iv = window.crypto.getRandomValues(new Uint8Array(12));
-    var abdata = window.Unibabel.strToUtf8Arr(data).buffer;
+    var abdata = convertStringToArrayBufferView(data);
     window.crypto.subtle.encrypt(
         {
             name: "AES-GCM",
@@ -30,7 +30,7 @@ function decryptChar(data, key){
         crypt["data"] //ArrayBuffer of the data
     )
         .then(function(decrypted){
-            success(data, window.Unibabel.utf8ArrToStr(new Uint8Array(decrypted)));
+            success(data, convertArrayBufferViewtoString(decrypted));
         })
         .catch(function(err){
             error(data, "decryptchar", err);
@@ -38,8 +38,8 @@ function decryptChar(data, key){
 }
 //data: password, salt, iterations
 function deriveKey(data, success, error){
-    var abdata = window.Unibabel.strToUtf8Arr(data["password"]).buffer;
-    var saltBuffer = window.Unibabel.strToUtf8Arr(data["salt"]).buffer;
+    var abdata = convertStringToArrayBufferView(data["password"]).buffer;
+    var saltBuffer = convertStringToArrayBufferView(data["salt"]).buffer;
 	window.crypto.subtle.importKey(
 			'raw', 
 			abdata, 
@@ -59,9 +59,9 @@ function deriveKey(data, success, error){
 				[ "encrypt", "decrypt" ]
 					)
 	}).then(function (webKey) {
-		return crypto.subtle.exportKey("raw", webKey);
+		return crypto.subtle.exportKey("jwk", webKey);
 	}).then(function (buffer) {
-            success(data, window.Unibabel.utf8ArrToStr(new Uint8Array(buffer)));
+            success(data, buffer["k"]);
 	});
 }
 function exportKey(key){
@@ -70,9 +70,26 @@ function exportKey(key){
     });
 }
 function importKey(key){
-    return new Promise( function(success, error) {
-        success(SHA512(key+salt2));
-    });
+    var abdata = convertStringToArrayBufferView(key).buffer;
+    return window.crypto.subtle.importKey(
+        "raw", //can be "jwk" or "raw"
+        {
+                k: abdata,
+                alg: "A256GCM",
+                ext: true
+        },
+        {   //this is the algorithm options
+            name: "AES-GCM",
+        },
+        false, //whether the key is extractable (i.e. can be used in exportKey)
+        ["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+    )
+        .then(function(sk){
+            success(sk);
+        })
+        .catch(function(err){
+            error({"data";key, "rountine":"importKey", "error":err);
+        });
 }
 function storeKey(data){
     return new Promise( function(success, error) {
@@ -310,4 +327,22 @@ function decryptArray(enc_arr, key) {
             })(enc_arr[x], x);
         }
     });
+}
+function convertStringToArrayBufferView(str) {
+    var bytes = new Uint8Array(str.length);
+    for (var iii = 0; iii < str.length; iii++) 
+    {
+        bytes[iii] = str.charCodeAt(iii);
+    }
+
+    return bytes;
+}
+function convertArrayBufferViewtoString(buffer) {
+    var str = "";
+    for (var iii = 0; iii < buffer.byteLength; iii++) 
+    {
+        str += String.fromCharCode(buffer[iii]);
+    }
+
+    return str;
 }
