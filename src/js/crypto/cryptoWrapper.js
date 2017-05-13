@@ -35,8 +35,8 @@ function deriveKey(data, success, error){
 function exportKey(key){
     return String(key);
 }
-function importKey(key){
-    return SHA512(key+salt2);
+function importKey(key, success, error){
+    success(key, SHA512(key+salt2));
 }
 function SHA512(value){
     return String(CryptoJS.SHA512(value));

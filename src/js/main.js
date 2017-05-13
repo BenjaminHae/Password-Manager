@@ -240,12 +240,6 @@ function dataReady(data){
     if(file_enabled==1) $("#fileincludeckbp").show(); else $("#fileincludeckbp").hide();
     if(!data["fields_allow_change"])
         $("#changefieldsnav").hide();
-    var secretkey0=getpwdstore(salt2);
-    if (secretkey0==""){
-        quitpwd("Login failed, due to missing secretkey");
-        return;
-    }
-    secretkey=importKey(secretkey0);
     
     // show last succesfull Login
     if (!seenLoginInformation) {
@@ -492,7 +486,15 @@ function reloadAccounts() {
 }
 $(document).ready(function(){
     datatablestatus=$("#pwdlist").DataTable({ordering:false, info:true,autoWidth:false, "deferRender": true, drawCallback: function(settings) { preDrawCallback( this.api(), settings);}, "lengthMenu": [ [10, 25, 50, 100, 200, -1], [10, 25, 50, 100, 200, "All"] ] });
-    $.post("rest/password.php",{},function(msg){dataReady(msg);});
+    var secretkey0=getpwdstore(salt2);
+    if (secretkey0==""){
+        quitpwd("Login failed, due to missing secretkey");
+        return;
+    }
+    importKey(secretkey0, function(orig, sk){
+        secretkey = sk;
+        $.post("rest/password.php",{},function(msg){dataReady(msg);});
+    }, defaultError);
     $("#pinloginform").on('submit',function(e){
         e.preventDefault();
         var pin=$("#pinxx").val();
