@@ -2,7 +2,7 @@
 //success is a function(data, result), with data being the input data and result being a string(possible of a json object containing salt/iv and the encrypted char)
 function encryptChar(data, key){
     var iv = window.crypto.getRandomValues(new Uint8Array(12));
-    var abdata = convertStringToArrayBufferView(data);
+    var abdata = str2ab(data);
     window.crypto.subtle.encrypt(
         {
             name: "AES-GCM",
@@ -12,7 +12,7 @@ function encryptChar(data, key){
         abdata //ArrayBuffer of data you want to encrypt
     )
         .then(function(encrypted){
-            success(data, JSON.stringify({"iv":iv, "data":encrypted}));
+            success(data, JSON.stringify({"iv":_arrayBufferToBase64(iv), "data":_arrayBufferToBase64(encrypted)}));
         })
         .catch(function(err){
             error(data, "encryptchar", err);
@@ -24,13 +24,13 @@ function decryptChar(data, key){
     window.crypto.subtle.decrypt(
         {
             name: "AES-GCM",
-            iv: crypt["iv"], //The initialization vector you used to encrypt
+            iv: _base64ToArrayBuffer(crypt["iv"]), //The initialization vector you used to encrypt
         },
         key, //from generateKey or importKey above
-        crypt["data"] //ArrayBuffer of the data
+        _base64ToArrayBuffer(crypt["data"]) //ArrayBuffer of the data
     )
         .then(function(decrypted){
-            success(data, convertArrayBufferViewtoString(decrypted));
+            success(data, ab2str(decrypted));
         })
         .catch(function(err){
             error(data, "decryptchar", err);
@@ -38,8 +38,8 @@ function decryptChar(data, key){
 }
 //data: password, salt, iterations
 function deriveKey(data, success, error){
-    var abdata = convertStringToArrayBufferView(data["password"]).buffer;
-    var saltBuffer = convertStringToArrayBufferView(data["salt"]).buffer;
+    var abdata = str2ab(data["password"]);
+    var saltBuffer = str2ab(data["salt"]);
 	window.crypto.subtle.importKey(
 			'raw', 
 			abdata, 
@@ -68,11 +68,11 @@ function exportKey(key){
     return key;
 }
 function importKey(key){
-    var abdata = convertStringToArrayBufferView(key).buffer;
     return window.crypto.subtle.importKey(
-        "raw", //can be "jwk" or "raw"
+        "jwk", //can be "jwk" or "raw"
         {
-                k: abdata,
+                kty: "oct",
+                k: key,
                 alg: "A256GCM",
                 ext: true
         },
@@ -326,21 +326,32 @@ function decryptArray(enc_arr, key) {
         }
     });
 }
-function convertStringToArrayBufferView(str) {
-    var bytes = new Uint8Array(str.length);
-    for (var iii = 0; iii < str.length; iii++) 
-    {
-        bytes[iii] = str.charCodeAt(iii);
-    }
-
-    return bytes;
+function ab2str(buf) {
+  return String.fromCharCode.apply(null, new Uint16Array(buf));
 }
-function convertArrayBufferViewtoString(buffer) {
-    var str = "";
-    for (var iii = 0; iii < buffer.byteLength; iii++) 
-    {
-        str += String.fromCharCode(buffer[iii]);
+function str2ab(str) {
+  var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
+  var bufView = new Uint16Array(buf);
+  for (var i=0, strLen=str.length; i < strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+}
+function _arrayBufferToBase64(buffer) {
+    var binary = '';
+    var bytes = new Uint8Array( buffer );
+    var len = bytes.byteLength;
+    for (var i = 0; i < len; i++) {
+        binary += String.fromCharCode( bytes[ i ] );
     }
-
-    return str;
+    return window.btoa( binary );
+}
+function _base64ToArrayBuffer(base64) {
+    var binary_string =  window.atob(base64);
+    var len = binary_string.length;
+    var bytes = new Uint8Array( len );
+    for (var i = 0; i < len; i++)        {
+        bytes[i] = binary_string.charCodeAt(i);
+    }
+    return bytes.buffer;
 }
