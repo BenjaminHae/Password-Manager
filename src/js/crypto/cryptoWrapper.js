@@ -15,7 +15,7 @@ function encryptChar(data, key){
             success(data, JSON.stringify({"iv":_arrayBufferToBase64(iv), "data":_arrayBufferToBase64(encrypted)}));
         })
         .catch(function(err){
-            error(data, "encryptchar", err);
+            error(data, "encryptChar", err);
         });
 }
 //data contains, value(possibly a json string with iv and encrypted string), key
@@ -33,7 +33,7 @@ function decryptChar(data, key){
             success(data, ab2str(decrypted));
         })
         .catch(function(err){
-            error(data, "decryptchar", err);
+            error(data, "decryptChar", err);
         });
 }
 //data: password, salt, iterations
