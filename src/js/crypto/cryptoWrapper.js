@@ -3,30 +3,31 @@
 function encryptChar(data, key){
     return new Promise( function(success, error) {
         if(key == ""){
-            error(data, "encryptchar", "empty key detected");
+            error({"data":data, "routine":"encryptChar", "error":"empty key detected"});
         }
         var p = CryptoJS.AES.encrypt(data,key).toString();
-        success(data, p);
+        success({"origData":data, "result":p});
     });
 }
 //data contains, value(possibly a json string with iv and encrypted string), key
 function decryptChar(data, key){ 
     return new Promise( function(success, error) {
         if(data==""){
-            success(data, "");
+            success({"data":data, "result":""});
         }
         if(key == ""){
-            error(data, "decryptchar", "empty key detected");
+            error({"data":data, "routine":"decryptChar", "error":"empty key detected"});
+            return;
         }
         var p=CryptoJS.enc.Utf8.stringify(CryptoJS.AES.decrypt(data, key));
-        success(data, p);
+        success({"data":data, "result":p});
     });
 } 
 //data: password, salt, iterations
 function deriveKey(data){
     return new Promise( function(success, error) {
         if(data["password"]==""||data["salt"]==""){
-            error(data, "deriveKey", "empty key detected");
+            error({"data":data, "routine":"deriveKey", "error":"empty key detected"});
             return;
         }
         var hash = CryptoJS.SHA512(data["password"]);
@@ -40,7 +41,7 @@ function exportKey(key){
 }
 function importKey(key){
     return new Promise( function(success, error) {
-        success(key, SHA512(key+salt2));
+        success(SHA512(key+salt2));
     });
 }
 function SHA512(value){
@@ -51,12 +52,12 @@ function decryptPassword(data, key){
         var origData = data;
         decryptChar(data["enpassword"], key)
             .catch(error)
-            .then(function(data, thekey) {
+            .then(function(result) {
                 // no timeout needed as it's already async by using decryptChar
                 if (thekey==""){
-                    success(data, "");
+                    success({"data":result["data"], "result":""});
                 }
-                success(origData, get_orig_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(origData["name"])),ALPHABET,thekey));
+                success({"data":result["data"], "result":get_orig_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(result["data"]["name"])),ALPHABET,result["result"])});
             });
     });
 }
@@ -82,7 +83,7 @@ function decryptAccount(data, key){
                     return;
                 }
             }
-            success(origData, decryptedAccount);
+            success({"data":origData, "result":decryptedAccount});
         }
         for (item in data){
             if (item == "index"||item=="kss"){
@@ -91,8 +92,8 @@ function decryptAccount(data, key){
             (function(data, item, key, decryptedAccount){
                 decryptChar(data[item], key)
                     .catch(error)
-                    .then(function(data, p){
-                        decryptedAccount[item] = p;
+                    .then(function(result){
+                        decryptedAccount[item] = result["result"];
                         isAccountFinished();
                     });
             })(data, item, key, decryptedAccount);
@@ -112,7 +113,7 @@ function encryptAccount(data, key, confkey){
                     return ;
                 }
             }
-            success(origData, encryptedAccount);
+            success({"data":origData, "result":encryptedAccount});
         }
         var passwordData = {"name":origData["name"], "pass":origData["newpwd"]};
         if (confkey !== undefined) {
@@ -120,8 +121,8 @@ function encryptAccount(data, key, confkey){
         }
         encryptPassword(passwordData, key)
             .catch(error)
-            .then(function(origPw, encPw){
-                encryptedAccount["newpwd"] = encPw;
+            .then(function(result){
+                encryptedAccount["newpwd"] = result["result"];
                 isAccountFinished();
             });
         for (item in data){
@@ -131,8 +132,8 @@ function encryptAccount(data, key, confkey){
             (function(data, item, key, encryptedAccount){
                 encryptChar(data[item], key)
                     .catch(error)
-                    .then(function(data, p){
-                        encryptedAccount[item] = p;
+                    .then(function(result){
+                        encryptedAccount[item] = result["result"];
                         isAccountFinished();
                     });
             })(data, item, key, encryptedAccount);
@@ -149,27 +150,27 @@ function encryptFile(data, key) {
                     return;
                 }
             }
-            success(origData, encryptedFile);
+            success({"data":origData, "result":encryptedFile});
         }
         origData["fkey"] = getpwd(default_letter_used, Math.floor(Math.random() * 18) + 19);
 
         encryptPassword({"pass":origData["fkey"], "name":origData["fname"]}, key)
             .catch(error)
-            .then(function(origPw, encPw){
-                encryptedFile["fkey"] = encPw;
+            .then(function(result){
+                encryptedFile["fkey"] = result["result"];
                 isFileFinished();
             });
 
         encryptChar(origData["data"], origData["fkey"])
             .catch(error)
-            .then(function(data, p){
-                encryptedFile["data"] = p;
+            .then(function(result){
+                encryptedFile["data"] = result["result"];
                 isFileFinished();
             });
         encryptChar(origData["fname"], secretkey)
             .catch(error)
-            .then(function(data, p){
-                encryptedFile["fname"] = p;
+            .then(function(result){
+                encryptedFile["fname"] = result["result"];
                 isFileFinished();
             });
     });

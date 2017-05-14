@@ -22,10 +22,10 @@ $.ajaxPrefilter(function(options, originalOptions, jqXHR){
         options.data += "session_token=" + localStorage.session_token;
     }
 });
-function defaultError(data, routine, error){
-    alert("Error in "+routine+": "+error+"\r\nDetails in console.");
-    console.log("Error in "+routine+": "+error+"\r\nData:");
-    console.log(data);
+function defaultError(error){
+    alert("Error in "+error["routine"]+": "+error["error"]+"\r\nDetails in console.");
+    console.log("Error in "+error["routine"]+": "+error["error"]+"\r\nData:");
+    console.log(error["data"]);
 }
 function quitpwd(reason)
 {
@@ -91,8 +91,8 @@ function add_account(acc, pass, other, callback){
     other = JSON.stringify(other);
     encryptAccount({"name":acc, "newpwd":pass, "other":other}, secretkey)
         .catch(defaultError)
-        .then(function(origData, encryptedAccount){
-            $.post("rest/insert.php",encryptedAccount,callback);
+        .then(function(result){
+            $.post("rest/insert.php",result["result"],callback);
         });
 }
 function import_raw(json){
@@ -119,10 +119,10 @@ function import_raw(json){
             else{
                 encryptFile({id:msg, fname:fname, data:fdata}, secretkey)
                     .catch(defaultError)
-                    .then(function(origData, encFile){
-                        $.post('rest/uploadfile.php',encFile,function(msg){
+                    .then(function(result){
+                        $.post('rest/uploadfile.php',result["result"],function(msg){
                             if(msg!='1')
-                                showMessage('warning',"Fail to add file for " + acc + ", please try again manually later.", true);
+                                showMessage('warning',"Fail to add file for " + result["data"] + ", please try again manually later.", true);
                         });
                     });
                 }
@@ -251,7 +251,7 @@ function dataReady(data){
     }
     importKey(secretkey0)
         .catch(defaultError)
-        .then(function(key, sk) {
+        .then(function(sk) {
             secretkey = sk;
             // show last succesfull Login
             if (!seenLoginInformation) {
@@ -289,7 +289,8 @@ function dataReady(data){
                 (function(index){
                     decryptAccount(accounts[i], secretkey)
                         .catch(defaultError)
-                        .then(function(origAccount, account){
+                        .then(function(result){
+                            var account = result["result"];
                             accountarray[index]["name"] = account["name"];
                             accountarray[index]["enpassword"] = account["kss"];
                             if (account["additional"] != "") {
@@ -313,8 +314,8 @@ function dataReady(data){
                 accountarray[index]['fkey'] = fdata[i]['fkey'];
                 decryptChar(fdata[i]['fname'], secretkey)
                     .catch(defaultError)
-                    .then(function(currentFile, fname){
-                        accountarray[index]['fname'] =  fname;
+                    .then(function(result){
+                        accountarray[index]['fname'] =  result["result"];
                         decryptionsLeft -= 1;
                         if (decryptionsLeft <= 0){
                             accountsDecrypted();
@@ -474,8 +475,8 @@ function downloadf(id){
                     }
                     return new Blob(byteArrays, { type: contentType });
                 }
-                function downloadError(data, routine, error){
-                    defaultError(data, routine, error);
+                function downloadError(error){
+                    defaultError(error);
                     $("#messagewait").modal("hide");
                 }
                 decryptPassword({"name": fname, "enpassword": filedata['key']}, secretkey)
@@ -483,7 +484,8 @@ function downloadf(id){
                     .then(function(pwData, fkey){
                         decryptChar(filedata['data'], fkey)
                             .catch(downloadError)
-                            .then(function(origData, data){
+                            .then(function(result){
+                                var data = result["result"];
                                 var typedata = data.substring(5,data.search(";"));
                                 data = data.substring(data.search(",")+1);
                                 saveAs(base64toBlob(data,typedata),fname);
@@ -525,11 +527,12 @@ $(document).ready(function(){
                 else{
                     encryptChar(getpwdstore(PWsalt), pin+msg)
                         .catch(defaultError)
-                        .then(function(origData, encryptsec){
+                        .then(function(result){
+                            var encryptsec = result["result"];
                             encryptChar(getconfkey(PWsalt), pin+msg)
                                 .catch(defaultError)
-                                .then(function(origData, encryptconf){
-                                    setPINstore(device, salt, encryptsec, encryptconf);
+                                .then(function(result){
+                                    setPINstore(device, salt, encryptsec, result["result"]);
                                     showMessage('success', 'PIN set, use PIN to login next time');
                                     $('#pin').modal('hide');
                                 });
@@ -647,7 +650,9 @@ $(document).ready(function(){
             var name = $("#edititeminput").val();
             encryptAccount({"name":name,"newpwd":newpwd,"index":id,"other":other}, secretkey)
                 .catch(defaultError)
-                .then(function(origData, account){
+                .then(function(result){
+                    var origData = result["data"];
+                    var account = result["result"];
                     $.post("rest/change.php", account, function(msg){ 
                         if(msg == 1) {
                             showMessage('success',"Data for "+name+" updated!");
@@ -707,16 +712,16 @@ $(document).ready(function(){
                 pkey = pbkdf2_enc(a, PWsalt, 500);
                 encryptChar(JSON.stringify(p.data))
                     .catch(defaultError)
-                    .then(pkey, function(origData, encData){
-                        p.data = encData;
+                    .then(function(result){
+                        p.data = result["result"];
                         done -= 1;
                         if (done <= 0)
                             processFinished();
                     });
                 encryptChar(JSON.stringify(p.fdata), pkey)
                     .catch(defaultError)
-                    .then(function(origData, encData){
-                        p.fdata = encData;
+                    .then(function(result){
+                        p.fdata = result["result"];
                         done -= 1;
                         if (done <= 0)
                             processFinished();
@@ -750,7 +755,8 @@ $(document).ready(function(){
         var id = parseInt($("#edit").data('id'));
         decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey)
             .catch(defaultError)
-            .then(function(data, thekey){
+            .then(function(result){
+                var thekey = result["result"];
                 if (thekey==""){
                     $("#edititeminputpw").val("Oops, some error occurs!");
                     return;
@@ -802,7 +808,9 @@ $(document).ready(function(){
                     (function(x, accarray, newconfkey){
                         decryptPassword(accountarray[x], secretkey)
                             .catch(defaultError)
-                            .then(function(account, raw_pass) {
+                            .then(function(result) {
+                                var accout = result["data"];
+                                var raw_pass = result["result"];
                                 var newAccount = {"name": account["name"], "fname": account["fname"], "other": JSON.stringify(account["other"]), "newpwd": raw_pass};
                                 var raw_fkey = '1';
                                 function saveAccount(raw_fkey){
@@ -814,8 +822,8 @@ $(document).ready(function(){
                                     newAccount["fk"] = raw_fkey;
                                     encryptAccount(newAccount, newsecretkey, newconfkey)
                                         .catch(defaultError)
-                                        .then(function(origData, encryptedAccount){
-                                            accarray[x] = encryptedAccount;
+                                        .then(function(result){
+                                            accarray[x] = result["result"];
                                             decryptionsLeft -= 1;
                                             if (decryptionsLeft <= 0) {
                                                 finishPasswordChange();
@@ -825,8 +833,8 @@ $(document).ready(function(){
                                 if (newAccount["fname"] != "") {
                                     decryptPassword({"name":account['fname'], "enpassword":account['fkey']}, secretkey)
                                         .catch(defaultError)
-                                        .then(function(origData, raw_fkey){ 
-                                            saveAccount(raw_fkey);
+                                        .then(function(result){ 
+                                            saveAccount(result["result"]);
                                         });
                                 }
                                 else
