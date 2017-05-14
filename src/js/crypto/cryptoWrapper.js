@@ -54,7 +54,7 @@ function decryptPassword(data, key){
             .catch(error)
             .then(function(result) {
                 // no timeout needed as it's already async by using decryptChar
-                if (thekey==""){
+                if (result["result"]==""){
                     success({"data":result["data"], "result":""});
                 }
                 success({"data":result["data"], "result":get_orig_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(result["data"]["name"])),ALPHABET,result["result"])});
