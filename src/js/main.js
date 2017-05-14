@@ -998,7 +998,10 @@ function edit(row){
 function clicktoshow(id){ 
     timeout=default_timeout+Math.floor(Date.now() / 1000);
     id=parseInt(id);
-    decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey, function(data, thekey){
+    decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey)
+        .catch(defaultError)
+        .then(function(result){
+        var thekey = result["result"];
         if (thekey==""){
             $("#"+id).text("Oops, some error occurs!");
             return;
@@ -1009,7 +1012,7 @@ function clicktoshow(id){
                 .on('click',{"index":id},function(event){clicktohide(event.data.index);}) 
                     .append($('<span class="glyphicon glyphicon-eye-close"></span>')));
         $("#"+id+" > .pwdshowbox").text(thekey);
-    }, defaultError);
+    });
 } 
 function showuploadfiledlg(id){
     $("#uploadfiledlg").modal("hide");
