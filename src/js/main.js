@@ -89,9 +89,11 @@ function add_account(acc, pass, other, callback){
     if(!("_system_passwordLastChangeTime" in other)) 
         other["_system_passwordLastChangeTime"] = Math.floor(Date.now() / 1000);
     other = JSON.stringify(other);
-    encryptAccount({"name":acc, "newpwd":pass, "other":other}, secretkey, function(origData, encryptedAccount){
-        $.post("rest/insert.php",encryptedAccount,callback);
-    }, defaultError);
+    encryptAccount({"name":acc, "newpwd":pass, "other":other}, secretkey)
+        .catch(defaultError)
+        .then(function(origData, encryptedAccount){
+            $.post("rest/insert.php",encryptedAccount,callback);
+        });
 }
 function import_raw(json){
     json=JSON.parse(sanitize_json(json));
@@ -115,13 +117,15 @@ function import_raw(json){
             if(msg==0) 
                 showMessage('warning',"Fail to add "+acc+", please try again manually later.", true); 
             else{
-                encryptFile({id:msg, fname:fname, data:fdata}, secretkey, function(origData, encFile){
-                    $.post('rest/uploadfile.php',encFile,function(msg){
-                        if(msg!='1')
-                            showMessage('warning',"Fail to add file for " + acc + ", please try again manually later.", true);
+                encryptFile({id:msg, fname:fname, data:fdata}, secretkey)
+                    .catch(defaultError)
+                    .then(function(origData, encFile){
+                        $.post('rest/uploadfile.php',encFile,function(msg){
+                            if(msg!='1')
+                                showMessage('warning',"Fail to add file for " + acc + ", please try again manually later.", true);
+                        });
                     });
-                }, defaultError);
-            }
+                }
         }
         if(acc==''||pass==''||fname=='') {
             showMessage('warning', "one of account, password or filename empty! will continue to process other accounts, check back after this finished", true); return;
@@ -245,73 +249,79 @@ function dataReady(data){
         quitpwd("Login failed, due to missing secretkey");
         return;
     }
-    importKey(secretkey0, function(key, sk) {
-        secretkey = sk;
-        // show last succesfull Login
-        if (!seenLoginInformation) {
-            var loginMsgType = 'info';
-            var failedMsg = '';
-            if (data["loginInformation"]["failedCount"] > 0){
-                loginMsgType = 'danger';
-                failedMsg = 'Since then there {0} ' + data["loginInformation"]["failedCount"] + ' failed login attempt{1}.';
-                if (data["loginInformation"]["failedCount"] > 1){
-                    failedMsg = failedMsg.replace("\{0\}", "where").replace("\{1\}", "s");
+    importKey(secretkey0)
+        .catch(defaultError)
+        .then(function(key, sk) {
+            secretkey = sk;
+            // show last succesfull Login
+            if (!seenLoginInformation) {
+                var loginMsgType = 'info';
+                var failedMsg = '';
+                if (data["loginInformation"]["failedCount"] > 0){
+                    loginMsgType = 'danger';
+                    failedMsg = 'Since then there {0} ' + data["loginInformation"]["failedCount"] + ' failed login attempt{1}.';
+                    if (data["loginInformation"]["failedCount"] > 1){
+                        failedMsg = failedMsg.replace("\{0\}", "where").replace("\{1\}", "s");
+                    }
+                    else {
+                        failedMsg = failedMsg.replace("\{0\}", "was").replace("\{1\}", "");
+                    }
                 }
-                else {
-                    failedMsg = failedMsg.replace("\{0\}", "was").replace("\{1\}", "");
+                if((data["loginInformation"]["lastLogin"] > 0) || (data["loginInformation"]["failedCount"]) > 0) {
+                    showMessage(loginMsgType, 'Your last login was on ' + timeConverter(data["loginInformation"]["lastLogin"])+'. ' + failedMsg + ' Click for more information.')
+                        .on('click',function(event){
+                            $(this).alert('close');
+                            $('#historyformsesstoken').val(localStorage.session_token);
+                            $('#historyform').submit();
+                        });
                 }
+                seenLoginInformation = true;
             }
-            if((data["loginInformation"]["lastLogin"] > 0) || (data["loginInformation"]["failedCount"]) > 0) {
-                showMessage(loginMsgType, 'Your last login was on ' + timeConverter(data["loginInformation"]["lastLogin"])+'. ' + failedMsg + ' Click for more information.')
-                    .on('click',function(event){
-                        $(this).alert('close');
-                        $('#historyformsesstoken').val(localStorage.session_token);
-                        $('#historyform').submit();
+
+            var decryptionsLeft = accounts.length + fdata.length;
+            if (decryptionsLeft <= 0) {
+                accountsDecrypted();
+                return;
+            }
+            for(var i = 0; i<accounts.length; i++) {
+                var index = accounts[i]["index"];
+                accountarray[index] = { "index":index, "other": {}, "fname": '' };
+                (function(index){
+                    decryptAccount(accounts[i], secretkey)
+                        .catch(defaultError)
+                        .then(function(origAccount, account){
+                            accountarray[index]["name"] = account["name"];
+                            accountarray[index]["enpassword"] = account["kss"];
+                            if (account["additional"] != "") {
+                                //extract json
+                                var data = $.parseJSON(account["additional"]);
+                                accountarray[index]["other"] = data;
+                                for (x in accountarray[index]["other"])
+                                    if ( (accountarray[index]["other"][x] != "") && (x in fields) )
+                                    fields[x]["count"] += 1;
+                            }
+                            decryptionsLeft -= 1;
+                            callPlugins("readAccount",{"account":accountarray[index]});
+                            if (decryptionsLeft <= 0){
+                                accountsDecrypted();
+                            }
+                        });
+                })(index);
+            }
+            for(var i = 0; i<fdata.length; i++) {
+                var index = fdata[i]["index"];
+                accountarray[index]['fkey'] = fdata[i]['fkey'];
+                decryptChar(fdata[i]['fname'], secretkey)
+                    .catch(defaultError)
+                    .then(function(currentFile, fname){
+                        accountarray[index]['fname'] =  fname;
+                        decryptionsLeft -= 1;
+                        if (decryptionsLeft <= 0){
+                            accountsDecrypted();
+                        }
                     });
             }
-            seenLoginInformation = true;
-        }
-
-        var decryptionsLeft = accounts.length + fdata.length;
-        if (decryptionsLeft <= 0) {
-            accountsDecrypted();
-            return;
-        }
-        for(var i = 0; i<accounts.length; i++) {
-            var index = accounts[i]["index"];
-            accountarray[index] = { "index":index, "other": {}, "fname": '' };
-            (function(index){
-                decryptAccount(accounts[i], secretkey, function(origAccount, account){
-                    accountarray[index]["name"] = account["name"];
-                    accountarray[index]["enpassword"] = account["kss"];
-                    if (account["additional"] != "") {
-                        //extract json
-                        var data = $.parseJSON(account["additional"]);
-                        accountarray[index]["other"] = data;
-                        for (x in accountarray[index]["other"])
-                            if ( (accountarray[index]["other"][x] != "") && (x in fields) )
-                            fields[x]["count"] += 1;
-                    }
-                    decryptionsLeft -= 1;
-                    callPlugins("readAccount",{"account":accountarray[index]});
-                    if (decryptionsLeft <= 0){
-                        accountsDecrypted();
-                    }
-                }, defaultError);
-            })(index);
-        }
-        for(var i = 0; i<fdata.length; i++) {
-            var index = fdata[i]["index"];
-            accountarray[index]['fkey'] = fdata[i]['fkey'];
-            decryptChar(fdata[i]['fname'], secretkey, function(currentFile, fname){
-                accountarray[index]['fname'] =  fname;
-                decryptionsLeft -= 1;
-                if (decryptionsLeft <= 0){
-                    accountsDecrypted();
-                }
-            }, defaultError);
-        }
-    }, defaultError);
+        });
 }
 function accountsDecrypted(fdata){
     callPlugins("accountsReady");
@@ -464,17 +474,22 @@ function downloadf(id){
                     }
                     return new Blob(byteArrays, { type: contentType });
                 }
-                decryptPassword({"name": fname, "enpassword": filedata['key']}, secretkey, function(pwData, fkey){
-                    decryptChar(filedata['data'], fkey, function(origData, data){
-                        var typedata = data.substring(5,data.search(";"));
-                        data = data.substring(data.search(",")+1);
-                        saveAs(base64toBlob(data,typedata),fname);
-                        $("#messagewait").modal("hide");
-                    }, function(data, routine, error){
-                        defaultError(data, routine, error);
-                        $("#messagewait").modal("hide");
+                function downloadError(data, routine, error){
+                    defaultError(data, routine, error);
+                    $("#messagewait").modal("hide");
+                }
+                decryptPassword({"name": fname, "enpassword": filedata['key']}, secretkey)
+                    .catch(downloadError)
+                    .then(function(pwData, fkey){
+                        decryptChar(filedata['data'], fkey)
+                            .catch(downloadError)
+                            .then(function(origData, data){
+                                var typedata = data.substring(5,data.search(";"));
+                                data = data.substring(data.search(",")+1);
+                                saveAs(base64toBlob(data,typedata),fname);
+                                $("#messagewait").modal("hide");
+                            });
                     });
-                }, defaultError);
             }
         }
     });
@@ -508,13 +523,17 @@ $(document).ready(function(){
                     $('#pin').modal('hide');
                 }
                 else{
-                    encryptChar(getpwdstore(PWsalt), pin+msg, function(origData, encryptsec){
-                        encryptChar(getconfkey(PWsalt), pin+msg, function(origData, encryptconf){
-                            setPINstore(device, salt, encryptsec, encryptconf);
-                            showMessage('success', 'PIN set, use PIN to login next time');
-                            $('#pin').modal('hide');
-                        }, defaultError);
-                    }, defaultError);
+                    encryptChar(getpwdstore(PWsalt), pin+msg)
+                        .catch(defaultError)
+                        .then(function(origData, encryptsec){
+                            encryptChar(getconfkey(PWsalt), pin+msg)
+                                .catch(defaultError)
+                                .then(function(origData, encryptconf){
+                                    setPINstore(device, salt, encryptsec, encryptconf);
+                                    showMessage('success', 'PIN set, use PIN to login next time');
+                                    $('#pin').modal('hide');
+                                });
+                        });
                 }
             });
         }
@@ -626,22 +645,24 @@ $(document).ready(function(){
 
             other = JSON.stringify(other);
             var name = $("#edititeminput").val();
-            encryptAccount({"name":name,"newpwd":newpwd,"index":id,"other":other}, secretkey, function(origData, account){
-                $.post("rest/change.php", account, function(msg){ 
-                    if(msg == 1) {
-                        showMessage('success',"Data for "+name+" updated!");
-                        $('#edit').modal('hide');
-                        reloadAccounts();
-                    } 
-                    else 
-                        showMessage('warning',"Fail to update data for " + origData["name"] + ", please try again.", true);
-                    $("#edititeminput").attr("readonly",false);
-                    $("#editbtn").attr("disabled",false);
-                    $("#edititeminputpw").attr("readonly",false);
-                    for (x in fields)
-                        $("#edititeminput"+x).attr("readonly",false);
+            encryptAccount({"name":name,"newpwd":newpwd,"index":id,"other":other}, secretkey)
+                .catch(defaultError)
+                .then(function(origData, account){
+                    $.post("rest/change.php", account, function(msg){ 
+                        if(msg == 1) {
+                            showMessage('success',"Data for "+name+" updated!");
+                            $('#edit').modal('hide');
+                            reloadAccounts();
+                        } 
+                        else 
+                            showMessage('warning',"Fail to update data for " + origData["name"] + ", please try again.", true);
+                        $("#edititeminput").attr("readonly",false);
+                        $("#editbtn").attr("disabled",false);
+                        $("#edititeminputpw").attr("readonly",false);
+                        for (x in fields)
+                            $("#edititeminput"+x).attr("readonly",false);
+                    });
                 });
-            },defaultError);
         }
         setTimeout(process,50);
     }); 
@@ -684,18 +705,22 @@ $(document).ready(function(){
                     timeout=default_timeout+Math.floor(Date.now() / 1000);
                 }
                 pkey = pbkdf2_enc(a, PWsalt, 500);
-                encryptChar(JSON.stringify(p.data), pkey, function(origData, encData){
-                    p.data = encData;
-                    done -= 1;
-                    if (done <= 0)
-                        processFinished();
-                }, defaultError);
-                encryptChar(JSON.stringify(p.fdata), pkey, function(origData, encData){
-                    p.fdata = encData;
-                    done -= 1;
-                    if (done <= 0)
-                        processFinished();
-                }, defaultError);
+                encryptChar(JSON.stringify(p.data))
+                    .catch(defaultError)
+                    .then(pkey, function(origData, encData){
+                        p.data = encData;
+                        done -= 1;
+                        if (done <= 0)
+                            processFinished();
+                    });
+                encryptChar(JSON.stringify(p.fdata), pkey)
+                    .catch(defaultError)
+                    .then(function(origData, encData){
+                        p.fdata = encData;
+                        done -= 1;
+                        if (done <= 0)
+                            processFinished();
+                    });
             }
             function first(callback)
             {
@@ -723,14 +748,16 @@ $(document).ready(function(){
     $("#editAccountShowPassword").click(function(){
         $("#editAccountShowPassword").popover('hide');
         var id = parseInt($("#edit").data('id'));
-        decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey, function(data, thekey){
-            if (thekey==""){
-                $("#edititeminputpw").val("Oops, some error occurs!");
-                return;
-            }
-            $("#edititeminputpw").val(thekey);
-            $("#editAccountShowPassword").addClass("collapse");
-        }, defaultError);
+        decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey)
+            .catch(defaultError)
+            .then(function(data, thekey){
+                if (thekey==""){
+                    $("#edititeminputpw").val("Oops, some error occurs!");
+                    return;
+                }
+                $("#edititeminputpw").val(thekey);
+                $("#editAccountShowPassword").addClass("collapse");
+            });
     });
     $("#delbtn").click(function(){
         delepw($("#edit").data('id'));
@@ -773,32 +800,38 @@ $(document).ready(function(){
                 }
                 for (var x in accountarray) {
                     (function(x, accarray, newconfkey){
-                        decryptPassword(accountarray[x], secretkey, function(account, raw_pass) {
-                            var newAccount = {"name": account["name"], "fname": account["fname"], "other": JSON.stringify(account["other"]), "newpwd": raw_pass};
-                            var raw_fkey = '1';
-                            function saveAccount(raw_fkey){
-                                if (raw_pass == ""||raw_fkey == '') {
-                                    showMessage('danger',"FATAL ERROR WHEN TRYING TO DECRYPT ALL PASSWORDS", true);
-                                    return;
-                                }
-                                raw_fkey = gen_temp_pwd(newconfkey,PWsalt,SHA512(account["fname"]),ALPHABET,raw_fkey);
-                                newAccount["fk"] = raw_fkey;
-                                encryptAccount(newAccount, newsecretkey, function(origData, encryptedAccount){
-                                    accarray[x] = encryptedAccount;
-                                    decryptionsLeft -= 1;
-                                    if (decryptionsLeft <= 0) {
-                                        finishPasswordChange();
+                        decryptPassword(accountarray[x], secretkey)
+                            .catch(defaultError)
+                            .then(function(account, raw_pass) {
+                                var newAccount = {"name": account["name"], "fname": account["fname"], "other": JSON.stringify(account["other"]), "newpwd": raw_pass};
+                                var raw_fkey = '1';
+                                function saveAccount(raw_fkey){
+                                    if (raw_pass == ""||raw_fkey == '') {
+                                        showMessage('danger',"FATAL ERROR WHEN TRYING TO DECRYPT ALL PASSWORDS", true);
+                                        return;
                                     }
-                                }, defaultError, newconfkey);
-                            }
-                            if (newAccount["fname"] != "") {
-                                decryptPassword({"name":account['fname'], "enpassword":account['fkey']}, secretkey, function(origData, raw_fkey){ 
-                                    saveAccount(raw_fkey);
-                                }, defaultError);
-                            }
-                            else
-                                saveAccount("1");
-                        }, defaultError);
+                                    raw_fkey = gen_temp_pwd(newconfkey,PWsalt,SHA512(account["fname"]),ALPHABET,raw_fkey);
+                                    newAccount["fk"] = raw_fkey;
+                                    encryptAccount(newAccount, newsecretkey, newconfkey)
+                                        .catch(defaultError)
+                                        .then(function(origData, encryptedAccount){
+                                            accarray[x] = encryptedAccount;
+                                            decryptionsLeft -= 1;
+                                            if (decryptionsLeft <= 0) {
+                                                finishPasswordChange();
+                                            }
+                                        });
+                                }
+                                if (newAccount["fname"] != "") {
+                                    decryptPassword({"name":account['fname'], "enpassword":account['fkey']}, secretkey)
+                                        .catch(defaultError)
+                                        .then(function(origData, raw_fkey){ 
+                                            saveAccount(raw_fkey);
+                                        });
+                                }
+                                else
+                                    saveAccount("1");
+                            });
                     })(x, accarray, newconfkey);
                 }
             }

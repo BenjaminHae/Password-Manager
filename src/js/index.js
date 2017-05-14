@@ -122,36 +122,42 @@ function dataReady(data){
 
             var secretkey='';
             //derive Secret key
-            deriveKey({"password":reducedinfo(pwd,default_letter_used), "salt":JSsalt, "iterations":500}, function(derivedKey){
-                secretkey = exportKey(derivedKey);
-                deriveKey({"password":secretkey, "salt":JSsalt, "iterations":500}, function(login_sig){
-                    $.post("rest/check.php",{pwd:SHA512(exportKey(login_sig)+user),  user: user},function(msg){
-                        $(".errorhint").hide();
-                        if(msg==0){
-                            $("#nouser").show();
-                            $("#chk").attr("value", "Login");
-                            $("#chk").attr("disabled", false);
-                        }else if(msg==7){
-                            $("#blockip").show();
-                        }else if(msg==8){
-                            $("#accountban").show();
-                            $("#chk").attr("value", "Login");
-                            $("#chk").attr("disabled", false);
-                        }else if(msg==9){
-                            deriveKey({"password":SHA512(pwd+exportKey(secretkey)), "salt":JSsalt, "iterations":500}, function(confkey){
-                                setCookie("username",user);
-                                setpwdstore(secretkey,exportKey(confkey),PWsalt);                
-                                window.location.href="./password.php";
-                            }, defaultError);
-                        }else{
-                            $("#othererror").show();
-                            $("#chk").attr("value", "Login");
-                            $("#chk").attr("disabled", false);
-                        }
-                    });
+            deriveKey({"password":reducedinfo(pwd,default_letter_used), "salt":JSsalt, "iterations":500})
+                .catch(defaultError)
+                .then(function(derivedKey){
+                    secretkey = exportKey(derivedKey);
+                    deriveKey({"password":secretkey, "salt":JSsalt, "iterations":500})
+                        .catch(defaultError)
+                        .then(function(login_sig){
+                            $.post("rest/check.php",{pwd:SHA512(exportKey(login_sig)+user),  user: user},function(msg){
+                                $(".errorhint").hide();
+                                if(msg==0){
+                                    $("#nouser").show();
+                                    $("#chk").attr("value", "Login");
+                                    $("#chk").attr("disabled", false);
+                                }else if(msg==7){
+                                    $("#blockip").show();
+                                }else if(msg==8){
+                                    $("#accountban").show();
+                                    $("#chk").attr("value", "Login");
+                                    $("#chk").attr("disabled", false);
+                                }else if(msg==9){
+                                    deriveKey({"password":SHA512(pwd+exportKey(secretkey)), "salt":JSsalt, "iterations":500})
+                                        .catch(defaultError)
+                                        .then(function(confkey){
+                                            setCookie("username",user);
+                                            setpwdstore(secretkey,exportKey(confkey),PWsalt);                
+                                            window.location.href="./password.php";
+                                        });
+                                }else{
+                                    $("#othererror").show();
+                                    $("#chk").attr("value", "Login");
+                                    $("#chk").attr("disabled", false);
+                                }
+                            });
 
-                }, defaultError);
-            }, defaultError);
+                        });
+                });
         }
         setTimeout(process,50);
     }); 

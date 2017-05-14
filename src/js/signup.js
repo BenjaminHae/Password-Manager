@@ -40,34 +40,38 @@ function dataReady(data){
         $("#chk").attr("disabled", true);
         $("#chk").attr("value", "Wait");
         function process(){
-            deriveKey({"password":reducedinfo($("#pwd").val(),default_letter_used), "salt":JSsalt, "iterations":500}, function(derivedKey){
-                deriveKey({"password":exportKey(derivedKey), "salt":JSsalt, "iterations":500}, function(login_sig){
-                    $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(exportKey(login_sig)+$("#user").val()),  user: $("#user").val()},function(msg){ 
-                        if(msg==0){
-                            alert("User name already occupied, please choose another user name.");
-                        }
-                        else if(msg==1){
-                            alert("This E-mail has already been used.");
-                        }
-                        else if(msg==5){
-                            alert("Invalid E-mail address.");
-                            window.location.href="index.php";
-                        }
-                        else if(msg==9){
-                            alert("Successfully signup, now please sign in!");
-                            window.location.href="index.php";
-                        }
-                        else if(msg=="Method not allowed") {
-                            alert("Signup is not allowed.");
-                        }
-                        else{
-                            alert("There're some errors, please retry");
-                        }
-                        $("#chk").attr("value", "Submit");
-                        $("#chk").attr("disabled", false);
-                    }); 
-                }, defaultError);
-            }, defaultError);
+            deriveKey({"password":reducedinfo($("#pwd").val(),default_letter_used), "salt":JSsalt, "iterations":500})
+                .catch(defaultError)
+                .then(function(derivedKey){
+                    deriveKey({"password":exportKey(derivedKey), "salt":JSsalt, "iterations":500})
+                        .catch(defaultError)
+                        .then(function(login_sig){
+                            $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(exportKey(login_sig)+$("#user").val()),  user: $("#user").val()},function(msg){ 
+                                if(msg==0){
+                                    alert("User name already occupied, please choose another user name.");
+                                }
+                                else if(msg==1){
+                                    alert("This E-mail has already been used.");
+                                }
+                                else if(msg==5){
+                                    alert("Invalid E-mail address.");
+                                    window.location.href="index.php";
+                                }
+                                else if(msg==9){
+                                    alert("Successfully signup, now please sign in!");
+                                    window.location.href="index.php";
+                                }
+                                else if(msg=="Method not allowed") {
+                                    alert("Signup is not allowed.");
+                                }
+                                else{
+                                    alert("There're some errors, please retry");
+                                }
+                                $("#chk").attr("value", "Submit");
+                                $("#chk").attr("disabled", false);
+                            }); 
+                        });
+                });
         }
         setTimeout(process,50);
     }); 
