@@ -3,7 +3,7 @@
 function encryptChar(data, key){
     var iv = window.crypto.getRandomValues(new Uint8Array(12));
     var abdata = str2ab(data);
-    window.crypto.subtle.encrypt(
+    return window.crypto.subtle.encrypt(
         {
             name: "AES-GCM",
             iv: iv,
@@ -12,16 +12,16 @@ function encryptChar(data, key){
         abdata //ArrayBuffer of data you want to encrypt
     )
         .then(function(encrypted){
-            success(data, JSON.stringify({"iv":_arrayBufferToBase64(iv), "data":_arrayBufferToBase64(encrypted)}));
+            return { "data":data, "result":JSON.stringify({"iv":_arrayBufferToBase64(iv), "data":_arrayBufferToBase64(encrypted)})};
         })
         .catch(function(err){
-            error(data, "encryptChar", err);
+            throw {"data":data, "routine":"encryptChar", "error":err};
         });
 }
 //data contains, value(possibly a json string with iv and encrypted string), key
 function decryptChar(data, key){ 
     var crypt = JSON.parse(data);
-    window.crypto.subtle.decrypt(
+    return window.crypto.subtle.decrypt(
         {
             name: "AES-GCM",
             iv: _base64ToArrayBuffer(crypt["iv"]), //The initialization vector you used to encrypt
@@ -30,39 +30,45 @@ function decryptChar(data, key){
         _base64ToArrayBuffer(crypt["data"]) //ArrayBuffer of the data
     )
         .then(function(decrypted){
-            success(data, ab2str(decrypted));
+            return {"data":data, "result":ab2str(decrypted)};
         })
         .catch(function(err){
-            error(data, "decryptChar", err);
+            throw {"data":data, "routine":"decryptChar", "error":err};
         });
 }
 //data: password, salt, iterations
 function deriveKey(data, success, error){
     var abdata = str2ab(data["password"]);
     var saltBuffer = str2ab(data["salt"]);
-	window.crypto.subtle.importKey(
-			'raw', 
-			abdata, 
-			{name: 'PBKDF2'}, 
-			false, 
-			['deriveBits', 'deriveKey']
-			).then(function(key) {
-		return window.crypto.subtle.deriveKey(
-				{ "name": 'PBKDF2',
-					"salt": saltBuffer,
-					"iterations": 500,
-					"hash": 'SHA-512'
-				},
-				key,
-				{ "name": 'AES-CBC', "length": 256 },
-				true,
-				[ "encrypt", "decrypt" ]
-					)
-	}).then(function (webKey) {
-		return crypto.subtle.exportKey("jwk", webKey);
-	}).then(function (buffer) {
-            success(data, buffer["k"]);
-	});
+    return window.crypto.subtle.importKey(
+        'raw', 
+        abdata, 
+        {name: 'PBKDF2'}, 
+        false, 
+        ['deriveBits', 'deriveKey']
+    )
+        .then(function(key) {
+            return window.crypto.subtle.deriveKey(
+                { "name": 'PBKDF2',
+                    "salt": saltBuffer,
+                    "iterations": 500,
+                    "hash": 'SHA-512'
+                },
+                key,
+                { "name": 'AES-CBC', "length": 256 },
+                true,
+                [ "encrypt", "decrypt" ]
+            )
+        })
+        .then(function (webKey) {
+            return crypto.subtle.exportKey("jwk", webKey);
+        })
+        .then(function (buffer) {
+            return {"data":data, "result":buffer["k"]};
+        })
+        .catch(function(err){
+            throw {"data":data, "routine":"deriveKey", "error":err};
+        });
 }
 function exportKey(key){
     return key;
@@ -83,10 +89,10 @@ function importKey(key){
         ["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
     )
         .then(function(sk){
-            success(sk);
+            return sk;
         })
         .catch(function(err){
-            error({"data";key, "rountine":"importKey", "error":err);
+            throw {"data":key, "rountine":"importKey", "error":err};
         });
 }
 function storeKey(data){
