@@ -44,6 +44,49 @@ function importKey(key){
         success(SHA512(key+salt2));
     });
 }
+function storeKey(data){
+    return new Promise( function(success, error) {
+        var storeCount = 2;
+        function stored(){
+            storeCount -= 1;
+            if (storeCount <= 0){
+                success(data);
+            }
+        }
+        encryptChar(data["sk"], data["salt"])
+            .catch(function(err) {
+                error({"data":data, "routine":"storeKey-secretkey", "error":err});
+            })
+            .then(function(sk) {
+                sessionStorage.pwdsk = sk;
+                stored();
+            });
+        encryptChar(data["confusion_key"], data["salt"])
+            .catch(function(err) {
+                error({"data":data, "routine":"storeKey-confkey", "error":err});
+            })
+            .then(function(confkey) {
+                sessionStorage.confusion_key = confkey;
+                stored();
+            });
+    });
+}
+function retrieveKey(salt){
+    return new Promise( function(success, error) {
+        if(!sessionStorage.pwdsk) {
+            success("");
+        }
+        else {
+            decryptChar(sessionStorage.pwdsk, salt)
+                .catch(function(err){
+                    error({"data":salt, "routine":"retrieveKey", "error":err});
+                })
+                .then(function(key){
+                    success(key);
+                });
+        }
+    });
+}
 function SHA512(value){
     return String(CryptoJS.SHA512(value));
 }
