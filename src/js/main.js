@@ -244,12 +244,15 @@ function dataReady(data){
     if(file_enabled==1) $("#fileincludeckbp").show(); else $("#fileincludeckbp").hide();
     if(!data["fields_allow_change"])
         $("#changefieldsnav").hide();
-    var secretkey0=getpwdstore(salt2);
-    if (secretkey0==""){
-        quitpwd("Login failed, due to missing secretkey");
-        return;
-    }
-    importKey(secretkey0)
+    retrieveKey(salt2)
+        .catch(defaultError)
+        .then(function(key){
+            if (secretkey0==""){ 
+                quitpwd("Login failed, due to missing secretkey");
+                return;
+            }
+            return importKey(key);
+        })
         .catch(defaultError)
         .then(function(sk) {
             secretkey = sk;
@@ -525,17 +528,21 @@ $(document).ready(function(){
                     $('#pin').modal('hide');
                 }
                 else{
-                    encryptChar(getpwdstore(PWsalt), pin+msg)
+                    retrieveKey(PWsalt)
+                        .catch(defaultError)
+                        .then(function(key) {
+                            return encryptChar(key, pin+msg)
+                        })
                         .catch(defaultError)
                         .then(function(result){
                             var encryptsec = result["result"];
-                            encryptChar(getconfkey(PWsalt), pin+msg)
-                                .catch(defaultError)
-                                .then(function(result){
-                                    setPINstore(device, salt, encryptsec, result["result"]);
-                                    showMessage('success', 'PIN set, use PIN to login next time');
-                                    $('#pin').modal('hide');
-                                });
+                            return encryptChar(getconfkey(PWsalt), pin+msg)
+                        })
+                        .catch(defaultError)
+                        .then(function(result){
+                            setPINstore(device, salt, encryptsec, result["result"]);
+                            showMessage('success', 'PIN set, use PIN to login next time');
+                            $('#pin').modal('hide');
                         });
                 }
             });

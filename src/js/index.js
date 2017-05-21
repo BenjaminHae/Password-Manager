@@ -106,8 +106,11 @@ function dataReady(data){
                     $("#user").focus();
                     return;
                 }
-                setpwdstore(pwdsk,confkey,PWsalt);
-                window.location.href="./password.php";
+                storeKey({"sk":pwdsk, "confusion_key":confkey,"salt":PWsalt})
+                    .catch(defaultError)
+                    .then(function(){
+                        window.location.href="./password.php";
+                    });
             });
         });
     });
@@ -146,8 +149,11 @@ function dataReady(data){
                                         .catch(defaultError)
                                         .then(function(confkey){
                                             setCookie("username",user);
-                                            setpwdstore(secretkey,exportKey(confkey),PWsalt);                
-                                            window.location.href="./password.php";
+                                            storeKey({"sk":secretkey, "confusion_key":exportKey(confkey),"salt":PWsalt})
+                                                .catch(defaultError)
+                                                .then(function(){
+                                                    window.location.href="./password.php";
+                                                });
                                         });
                                 }else{
                                     $("#othererror").show();
