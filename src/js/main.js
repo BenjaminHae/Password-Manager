@@ -247,7 +247,7 @@ function dataReady(data){
     retrieveKey(salt2)
         .catch(defaultError)
         .then(function(key){
-            if (secretkey0==""){ 
+            if (key == ""){ 
                 quitpwd("Login failed, due to missing secretkey");
                 return;
             }
