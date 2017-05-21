@@ -4,10 +4,10 @@ var session_token;
 var usepin;
 var randomLoginStamp;
 var default_letter_used;
-function defaultError(data, routine, error){
-    alert("Error in "+routine+": "+error+"\r\nDetails in console.");
-    console.log("Error in "+routine+": "+error+"\r\nData:");
-    console.log(data);
+function defaultError(error){
+    alert("Error in "+error["routine"]+": "+error["error"]+"\r\nDetails in console.");
+    console.log("Error in "+error["routine"]+": "+error["error"]+"\r\nData:");
+    console.log(error["data"]);
 }
 function isSupportFileApi() {
     if(window.File && window.FileList && window.FileReader && window.Blob) {
