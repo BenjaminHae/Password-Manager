@@ -82,7 +82,7 @@ function retrieveKey(salt){
                     error({"data":salt, "routine":"retrieveKey", "error":err});
                 })
                 .then(function(key){
-                    success(key);
+                    success(key["result"]);
                 });
         }
     });
