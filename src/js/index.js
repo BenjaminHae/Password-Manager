@@ -128,10 +128,11 @@ function dataReady(data){
             deriveKey({"password":reducedinfo(pwd,default_letter_used), "salt":JSsalt, "iterations":500})
                 .catch(defaultError)
                 .then(function(derivedKey){
-                    secretkey = exportKey(derivedKey);
+                    secretkey = exportKey(derivedKey["result"]);
                     deriveKey({"password":secretkey, "salt":JSsalt, "iterations":500})
                         .catch(defaultError)
-                        .then(function(login_sig){
+                        .then(function(result){
+                            login_sig = result["result"];
                             $.post("rest/check.php",{pwd:SHA512(exportKey(login_sig)+user),  user: user},function(msg){
                                 $(".errorhint").hide();
                                 if(msg==0){
@@ -149,7 +150,7 @@ function dataReady(data){
                                         .catch(defaultError)
                                         .then(function(confkey){
                                             setCookie("username",user);
-                                            storeKey({"sk":secretkey, "confusion_key":exportKey(confkey),"salt":PWsalt})
+                                            storeKey({"sk":secretkey, "confusion_key":exportKey(confkey["result"]),"salt":PWsalt})
                                                 .catch(defaultError)
                                                 .then(function(){
                                                     window.location.href="./password.php";

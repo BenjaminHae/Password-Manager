@@ -33,7 +33,7 @@ function deriveKey(data){
         var hash = CryptoJS.SHA512(data["password"]);
         var salt = CryptoJS.SHA512(data["salt"]);
         var gen_key = CryptoJS.PBKDF2(hash, salt, { keySize: 512/32, iterations: data["iterations"] });   
-        success(gen_key);
+        success({"data":data, "result":gen_key});
     });
 }
 function exportKey(key){
