@@ -58,7 +58,7 @@ function storeKey(data){
                 error({"data":data, "routine":"storeKey-secretkey", "error":err});
             })
             .then(function(sk) {
-                sessionStorage.pwdsk = sk;
+                sessionStorage.pwdsk = sk["result"];
                 stored();
             });
         encryptChar(data["confusion_key"], data["salt"])
@@ -66,7 +66,7 @@ function storeKey(data){
                 error({"data":data, "routine":"storeKey-confkey", "error":err});
             })
             .then(function(confkey) {
-                sessionStorage.confusion_key = confkey;
+                sessionStorage.confusion_key = confkey["result"];
                 stored();
             });
     });
