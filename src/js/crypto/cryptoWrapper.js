@@ -224,7 +224,7 @@ function encryptFile(data, key) {
 }
 function decryptArray(enc_arr, key) {
     return new Promise( function(success, error) {
-        var arr_count = enc_arr.length;
+        var arr_count = Object.keys(enc_arr).length;
         var dec_array = new Array();
         function arr_done(){
             arr_count -= 1;
