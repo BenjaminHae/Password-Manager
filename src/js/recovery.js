@@ -235,6 +235,12 @@ function rec(txt){
     ALPHABET = json.ALPHABET;
     function process(){       
         gen_key();
+        var enc_pass=new Array();
+        var enc_acc=new Array();
+        var enc_other=new Array();
+        var enc_fname=new Array();
+        var enc_fkey=new Array();
+        var enc_fdata=new Array();
         decryptChar(json.data, dkey)
             .catch(function(err) {
                 alert("Wrong password, try again!");
@@ -269,12 +275,6 @@ function rec(txt){
                 defaultError(err);
             })
             .then(function(){
-                var enc_pass=new Array();
-                var enc_acc=new Array();
-                var enc_other=new Array();
-                var enc_fname=new Array();
-                var enc_fkey=new Array();
-                var enc_fdata=new Array();
                 for(var x in json.data){
                     enc_acc[x]=json.data[x][0];
                     enc_pass[x]=json.data[x][1];
