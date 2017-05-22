@@ -84,7 +84,7 @@ function gen_fname_array(enc_fname_array) {
 function gen_fdata_array(fkey_array,enc_fdata_array)
 {
     return new Promise( function(success, error) {
-        var fdata_count = enc_fdata_array.length;
+        var fdata_count = Object.keys(enc_fdata_array).length;
         var fdata_array = new Array();
         function fdata_done(){
             fdata_count -= 1;
@@ -113,7 +113,7 @@ function gen_other_array(enc_other_array) {
 function gen_pass_array(account_array,enc_pass_array)
 {
     return new Promise( function(success, error) {
-        var pass_count = enc_pass_array.length;
+        var pass_count = Object.keys(enc_pass_array).length;
         var pass_array = new Array();
         function pass_done(){
             pass_count -= 1;
@@ -140,7 +140,7 @@ function gen_pass_array(account_array,enc_pass_array)
 function gen_fkey_array(fname_array,enc_fkey_array)
 {
     return new Promise( function(success, error) {
-        var fkey_count = enc_fkey_array.length;
+        var fkey_count = Object.keys(enc_fkey_array).length;
         var fkey_array = new Array();
         function fkey_done(){
             fkey_count -= 1;
