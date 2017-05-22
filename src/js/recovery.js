@@ -243,12 +243,12 @@ function rec(txt){
                 defaultError(err);
             })
             .then(function(data) {
-                json.data = JSON.parse(data);
+                json.data = JSON.parse(data["result"]);
                 if(typeof json.fdata != 'undefined'){
                     return decryptChar(json.fdata, dkey)
                         .catch(defaultError)
                         .then(function(data) {
-                            json.fdata = data;
+                            json.fdata = data["result"];
                             if(json.fdata.status == 'OK') {
                                 json.fdata = json.fdata.data;
                                 has_file = 1;
@@ -268,7 +268,7 @@ function rec(txt){
                 $("#chk").attr("value", "RECOVER IT!");
                 defaultError(err);
             })
-            .then(function(data){
+            .then(function(){
                 var enc_pass=new Array();
                 var enc_acc=new Array();
                 var enc_other=new Array();
