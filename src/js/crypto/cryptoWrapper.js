@@ -99,6 +99,7 @@ function decryptPassword(data, key){
                 // no timeout needed as it's already async by using decryptChar
                 if (result["result"]==""){
                     success({"data":result["data"], "result":""});
+                    return;
                 }
                 success({"data":result["data"], "result":get_orig_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(result["data"]["name"])),ALPHABET,result["result"])});
             });
@@ -119,7 +120,10 @@ function decryptAccount(data, key){
     return new Promise( function(success, error) {
         // no timeout needed as it's already async by using decryptChar
         var origData = data;
-        var decryptedAccount = {"index": data["index"], "kss":data["kss"]};
+        var decryptedAccount = {"index": data["index"]};
+        if ("kss" in data) {
+            decryptedAccount["kss"] = data["kss"];
+        }
         function isAccountFinished(){
             for (item in origData){
                 if (!(item in decryptedAccount)) {
@@ -216,5 +220,27 @@ function encryptFile(data, key) {
                 encryptedFile["fname"] = result["result"];
                 isFileFinished();
             });
+    });
+}
+function decryptArray(enc_arr, key) {
+    return new Promise( function(success, error) {
+        var arr_count = enc_arr_array.length;
+        var dec_array = new Array();
+        function arr_done(){
+            arr_count -= 1;
+            if (arr_count <= 0) {
+                success(dec_array);
+            }
+        }
+        for (var x in enc_arr){
+            (function(item, x){
+                decryptChar(item, key)
+                    .catch(error)
+                    .then(function(data){
+                        dec_array[x] = data["result"];
+                        arr_done();
+                    });
+            })(enc_arr[x], x);
+        }
     });
 }
