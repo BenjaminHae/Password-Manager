@@ -123,7 +123,7 @@ function gen_pass_array(account_array,enc_pass_array)
         }
         for (var x in enc_pass_array){
             (function(pass, x) {
-                decryptPassword({"enpassword": pass, "name":account_array[x]}, secretkey)
+                decryptPassword({"enpassword": pass, "confkey": confkey, "name":account_array[x]}, secretkey)
                     .catch(error)
                     .then(function(data){
                         var tempchar;

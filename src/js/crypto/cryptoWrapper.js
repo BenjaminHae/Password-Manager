@@ -93,6 +93,11 @@ function SHA512(value){
 function decryptPassword(data, key){
     return new Promise( function(success, error) {
         var origData = data;
+        var confkey;
+        if ("confkey" in data)
+            confkey = data["confkey"];
+        else
+            confkey = getconfkey(PWsalt);
         decryptChar(data["enpassword"], key)
             .catch(error)
             .then(function(result) {
@@ -101,7 +106,7 @@ function decryptPassword(data, key){
                     success({"data":result["data"], "result":""});
                     return;
                 }
-                success({"data":result["data"], "result":get_orig_pwd(getconfkey(PWsalt),PWsalt,String(CryptoJS.SHA512(result["data"]["name"])),ALPHABET,result["result"])});
+                success({"data":result["data"], "result":get_orig_pwd(confkey, PWsalt, String(CryptoJS.SHA512(result["data"]["name"])), ALPHABET, result["result"])});
             });
     });
 }
