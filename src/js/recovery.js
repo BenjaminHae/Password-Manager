@@ -284,7 +284,7 @@ function rec(txt){
             })
             .catch(defaultError)
             .then(function(accounts){
-                acc_array = account;
+                acc_array = accounts;
                 return gen_other_array(enc_other);
             })
             .catch(defaultError)
