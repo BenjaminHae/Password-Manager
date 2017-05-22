@@ -9,6 +9,7 @@ echoheader();
 <script type="text/javascript" src="js/lib/FileSaver.min.js"></script>
 <script type="text/javascript" src="js/lib/jquery.csv.js"></script>
 <script type="text/javascript" src="js/recovery.js"></script>
+<script type="text/javascript" src="js/crypto/cryptoWrapper.js"></script>
 <div class="container theme-showcase">
     <div class="page-header">
         <h1>Before You Start...</h1>
