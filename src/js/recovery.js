@@ -132,6 +132,7 @@ function gen_pass_array(account_array,enc_pass_array)
                             tempchar = "Oops, there's some errors!";
                         }
                         pass_array[x] = tempchar;
+                        pass_done();
                     });
             })(enc_pass_array[x], x);
         }
