@@ -103,18 +103,20 @@ function decryptPassword(data, key){
             .then(function(result) {
                 // no timeout needed as it's already async by using decryptChar
                 if (result["result"]==""){
-                    success({"data":result["data"], "result":""});
+                    success({"data":data, "result":""});
                     return;
                 }
-                success({"data":result["data"], "result":get_orig_pwd(confkey, PWsalt, String(CryptoJS.SHA512(result["data"]["name"])), ALPHABET, result["result"])});
+                success({"data":data, "result":get_orig_pwd(confkey, PWsalt, String(CryptoJS.SHA512(data["name"])), ALPHABET, result["result"])});
             });
     });
 }
 function encryptPassword(data, key){
     return new Promise( function(success, error) {
-        var confkey = getconfkey(PWsalt);
+        var confkey;
         if ("confkey" in data)
             confkey = data["confkey"];
+        else
+            confkey = getconfkey(PWsalt);
         pass = gen_temp_pwd(confkey,PWsalt,String(CryptoJS.SHA512(data["name"])),ALPHABET,data["pass"]);
         encryptChar(pass, key)
             .catch(error)
