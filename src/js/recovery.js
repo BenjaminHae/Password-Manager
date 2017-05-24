@@ -67,13 +67,24 @@ function sanitize_json(s){
 }
 function gen_key()
 {
-    var i;
     var pass=$("#pwd").val();
-	secretkey=String(pbkdf2_enc(reducedinfo(pass,ALPHABET),JSsalt,500));
-    confkey=pbkdf2_enc(SHA512(pass+secretkey),JSsalt,500);
-    secretkey=SHA512(secretkey+PWsalt);
-    dkey=pbkdf2_enc(secretkey,PWsalt,500);
-    for(i=0;i<=30;i++) dkey=pbkdf2_enc(dkey,PWsalt,500);
+    return deriveKey({"password":reducedinfo(pass,ALPHABET), "salt":JSsalt, "iterations":500})
+        .catch(defaultError)
+        .then(function(key){
+            secretkey=String(key);
+            return deriveKey({"password":SHA512(pass+secretkey), "salt":JSsalt, "iterations":500})
+        })
+        .catch(defaultError)
+        .then(function(key){
+            confkey=String(key);
+            secretkey = SHA512(secretkey+PWsalt);
+            return deriveKey({"password":secretkey, "salt":PWsalt, "iterations":16000})
+        })
+        .catch(defaultError)
+        .then(function(key){
+            dkey = key;
+            return ;
+        })
 }
 function gen_account_array(enc_account_array) {
     return decryptArray(enc_account_array, secretkey);
