@@ -84,7 +84,7 @@ function gen_key()
         .then(function(key){
             dkey = key;
             return ;
-        })
+        });
 }
 function gen_account_array(enc_account_array) {
     return decryptArray(enc_account_array, secretkey);
@@ -246,14 +246,17 @@ function rec(txt){
     PWsalt = json.PWsalt;
     ALPHABET = json.ALPHABET;
     function process(){       
-        gen_key();
-        var enc_pass=new Array();
-        var enc_acc=new Array();
-        var enc_other=new Array();
-        var enc_fname=new Array();
-        var enc_fkey=new Array();
-        var enc_fdata=new Array();
-        decryptChar(json.data, dkey)
+        gen_key()
+            .catch(defaultError)
+            .then(function(){
+                var enc_pass=new Array();
+                var enc_acc=new Array();
+                var enc_other=new Array();
+                var enc_fname=new Array();
+                var enc_fkey=new Array();
+                var enc_fdata=new Array();
+                return decryptChar(json.data, dkey)
+            })
             .catch(function(err) {
                 alert("Wrong password, try again!");
                 $("#chk").removeAttr("disabled");
