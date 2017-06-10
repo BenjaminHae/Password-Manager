@@ -221,7 +221,7 @@ function encryptFile(data, key) {
                 encryptedFile["data"] = result["result"];
                 isFileFinished();
             });
-        encryptChar(origData["fname"], secretkey)
+        encryptChar(origData["fname"], key)
             .catch(error)
             .then(function(result){
                 encryptedFile["fname"] = result["result"];
