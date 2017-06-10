@@ -229,6 +229,35 @@ function encryptFile(data, key) {
             });
     });
 }
+function decryptFile(data, key) {
+    return new Promise( function(success, error) {
+        var origData = data;
+        var decryptedFile = { "id":data["id"]};
+        function isFileFinished(){
+            for (item in origData){
+                if (!(item in decryptedFile)) {
+                    return;
+                }
+            }
+            success({"data":origData, "result":decryptedFile});
+        }
+        decryptedFile["name"] = data["name"];
+        delete origData["status"];
+
+        decryptPassword({"pass":origData["key"], "name":origData["name"]}, key)
+            .catch(error)
+            .then(function(result){
+                var fkey = result["result"];
+                delete origData["key"];
+                decryptChar(origData["data"], fkey)
+                    .catch(error)
+                    .then(function(result){
+                        decryptedFile["data"] = result["result"];
+                        isFileFinished();
+                    });
+            });
+    });
+}
 function decryptArray(enc_arr, key) {
     return new Promise( function(success, error) {
         var arr_count = Object.keys(enc_arr).length;

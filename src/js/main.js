@@ -452,8 +452,8 @@ function downloadf(id){
             showMessage('danger','ERROR! '+filedata['message'], false);
         }
         else{
-            var fname = accountarray[id]['fname'];
-            if(fname=='') {
+            filedata["name"] = accountarray[id]['fname'];
+            if(filedata["name"] == '') {
                 showMessage('danger','ERROR! '+filedata['message'], false);
                 $("#messagewait").modal("hide");
             }
@@ -482,9 +482,9 @@ function downloadf(id){
                     defaultError(error);
                     $("#messagewait").modal("hide");
                 }
-                decryptPassword({"name": fname, "enpassword": filedata['key']}, secretkey)
+                decryptFile(filedata, key)
                     .catch(downloadError)
-                    .then(function(pwData, fkey){
+                    .then(function(decryptedFile){
                         decryptChar(filedata['data'], fkey)
                             .catch(downloadError)
                             .then(function(result){
@@ -495,7 +495,6 @@ function downloadf(id){
                                 $("#messagewait").modal("hide");
                             });
                     });
-            }
         }
     });
 };
