@@ -57,7 +57,7 @@ function deriveKey(data, success, error){
                 key,
                 { "name": 'AES-CBC', "length": 256 },
                 true,
-                [ "encrypt", "decrypt" ]
+                [ "encrypt", "decrypt", "wrapKey", "unwrapKey" ]
             )
         })
         .then(function (webKey) {
@@ -86,7 +86,7 @@ function importKey(key){
             name: "AES-GCM",
         },
         false, //whether the key is extractable (i.e. can be used in exportKey)
-        ["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+        ["encrypt", "decrypt", "wrapKey", "unwrapKey"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
     )
         .then(function(sk){
             return sk;
@@ -248,6 +248,7 @@ function encryptAccount(data, key, confkey){
 function encryptFile(data, key) {
     return new Promise( function(success, error) {
         var origData = data;
+        origData["fkey"] = "";
         var encryptedFile = { "id":data["id"]};
         function isFileFinished(){
             for (item in origData){
@@ -257,28 +258,49 @@ function encryptFile(data, key) {
             }
             success({"data":origData, "result":encryptedFile});
         }
-        origData["fkey"] = getpwd(default_letter_used, Math.floor(Math.random() * 18) + 19);
+        // create key for file encryption
         encryptedFile["id"] = origData["id"];
+        window.crypto.subtle.generateKey(
+            {
+                name: "AES-GCM",
+                length: 256, //can be  128, 192, or 256
+            },
+            true,
+            ["encrypt", "decrypt"]
+        )
+            .then(function(fkey){
+                // Store Key
+                window.crypto.subtle.wrapKey(
+                    "jwk",
+                    fkey,
+                    key,
+                    {
+                        name: "AES-GCM",
+                            iv: window.crypto.getRandomValues(new Uint8Array(12)),
+                            tagLength: 128,
+                    }
+                )
+                    .then(function(wrapped){
+                        encryptedFile["fkey"] = _arrayBufferToBase64(wrapped);
+                        isFileFinished();
+                    })
+                    .catch(error);
 
-        encryptPassword({"pass":origData["fkey"], "name":origData["fname"]}, key)
-            .catch(error)
-            .then(function(result){
-                encryptedFile["fkey"] = result["result"];
-                isFileFinished();
-            });
-
-        encryptChar(origData["data"], origData["fkey"])
-            .catch(error)
-            .then(function(result){
-                encryptedFile["data"] = result["result"];
-                isFileFinished();
-            });
-        encryptChar(origData["fname"], key)
-            .catch(error)
-            .then(function(result){
-                encryptedFile["fname"] = result["result"];
-                isFileFinished();
-            });
+                encryptChar(origData["data"], fkey)
+                    .catch(error)
+                    .then(function(result){
+                        encryptedFile["data"] = result["result"];
+                        isFileFinished();
+                    });
+                encryptChar(origData["fname"], key)
+                    .catch(error)
+                    .then(function(result){
+                        encryptedFile["fname"] = result["result"];
+                        isFileFinished();
+                    });
+            })
+            .catch(error);
+        });
     });
 }
 function decryptFile(data, key) {
