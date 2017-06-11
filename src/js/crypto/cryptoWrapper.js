@@ -276,8 +276,8 @@ function encryptFile(data, key) {
                     key,
                     {
                         name: "AES-GCM",
-                            iv: window.crypto.getRandomValues(new Uint8Array(12)),
-                            tagLength: 128,
+                        //ToDo: Save IV
+                        iv: window.crypto.getRandomValues(new Uint8Array(12)),
                     }
                 )
                     .then(function(wrapped){
@@ -307,30 +307,36 @@ function decryptFile(data, key) {
     return new Promise( function(success, error) {
         var origData = data;
         var decryptedFile = { "id":data["id"]};
-        function isFileFinished(){
-            for (item in origData){
-                if (!(item in decryptedFile)) {
-                    return;
-                }
-            }
-            success({"data":origData, "result":decryptedFile});
-        }
         decryptedFile["name"] = data["name"];
         delete origData["status"];
 
-        decryptPassword({"enpassword":origData["key"], "name":origData["name"]}, key)
-            .catch(error)
-            .then(function(result){
-                var fkey = result["result"];
+        return window.crypto.subtle.unwrapKey(
+            "jwk", //"jwk", "raw", "spki", or "pkcs8" (whatever was used in wrapping)
+            _base64ToArrayBuffer(origData["key"];
+                key, //the AES-GCM key with "unwrapKey" usage flag
+                {   //these are the wrapping key's algorithm options
+                    name: "AES-GCM",
+                        //todo save iv!
+                        iv: ArrayBuffer(12), //The initialization vector you used to encrypt
+                },
+                {   //this what you want the wrapped key to become (same as when wrapping)
+                    name: "AES-CBC",
+                    length: 256
+                },
+                false,
+                ["decrypt"]
+            )
+            .then(function(fkey){
+                //returns a key object
                 delete origData["key"];
-                decryptChar(origData["data"], fkey)
-                    .catch(error)
-                    .then(function(result){
-                        decryptedFile["data"] = result["result"];
-                        isFileFinished();
-                    });
+                return decryptChar(origData["data"], fkey);
+            })
+            .then(function(result){
+                decryptedFile["data"] = result["result"];
+                isFileFinished();
+                return {"data":origData, "result":decryptedFile};
             });
-    });
+        });
 }
 function decryptArray(enc_arr, key) {
     return new Promise( function(success, error) {
