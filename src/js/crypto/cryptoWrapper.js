@@ -258,8 +258,14 @@ function encryptFile(data, key) {
             }
             success({"data":origData, "result":encryptedFile});
         }
-        // create key for file encryption
         encryptedFile["id"] = origData["id"];
+        encryptChar(origData["fname"], key)
+            .catch(error)
+            .then(function(result){
+                encryptedFile["fname"] = result["result"];
+                isFileFinished();
+            });
+        // create key for file encryption
         window.crypto.subtle.generateKey(
             {
                 name: "AES-GCM",
@@ -269,6 +275,7 @@ function encryptFile(data, key) {
             ["encrypt", "decrypt"]
         )
             .then(function(fkey){
+                var iv = window.crypto.getRandomValues(new Uint8Array(12));
                 // Store Key
                 window.crypto.subtle.wrapKey(
                     "jwk",
@@ -277,25 +284,18 @@ function encryptFile(data, key) {
                     {
                         name: "AES-GCM",
                         //ToDo: Save IV
-                        iv: window.crypto.getRandomValues(new Uint8Array(12)),
+                        iv: iv,
                     }
                 )
                     .then(function(wrapped){
-                        encryptedFile["fkey"] = _arrayBufferToBase64(wrapped);
+                        encryptedFile["fkey"] = JSON.stringify({"iv":_arrayBufferToBase64(iv), "data":_arrayBufferToBase64(wrapped)});
                         isFileFinished();
                     })
                     .catch(error);
-
                 encryptChar(origData["data"], fkey)
                     .catch(error)
                     .then(function(result){
                         encryptedFile["data"] = result["result"];
-                        isFileFinished();
-                    });
-                encryptChar(origData["fname"], key)
-                    .catch(error)
-                    .then(function(result){
-                        encryptedFile["fname"] = result["result"];
                         isFileFinished();
                     });
             })
@@ -309,15 +309,15 @@ function decryptFile(data, key) {
         var decryptedFile = { "id":data["id"]};
         decryptedFile["name"] = data["name"];
         delete origData["status"];
+        var fkey = JSON.parse(origData["key"]);
 
         return window.crypto.subtle.unwrapKey(
             "jwk", //"jwk", "raw", "spki", or "pkcs8" (whatever was used in wrapping)
-            _base64ToArrayBuffer(origData["key"];
+            _base64ToArrayBuffer(fkey["data"]);
                 key, //the AES-GCM key with "unwrapKey" usage flag
                 {   //these are the wrapping key's algorithm options
                     name: "AES-GCM",
-                        //todo save iv!
-                        iv: ArrayBuffer(12), //The initialization vector you used to encrypt
+                    iv: _base64ToArrayBuffer(fkey["iv"]), //The initialization vector you used to encrypt
                 },
                 {   //this what you want the wrapped key to become (same as when wrapping)
                     name: "AES-CBC",
