@@ -482,7 +482,7 @@ function downloadf(id){
                     defaultError(error);
                     $("#messagewait").modal("hide");
                 }
-                decryptFile(filedata, key)
+                decryptFile(filedata, secretkey)
                     .catch(downloadError)
                     .then(function(decryptedFile){
                         decryptChar(filedata['data'], fkey)
