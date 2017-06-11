@@ -248,6 +248,7 @@ function encryptAccount(data, key, confkey){
 function encryptFile(data, key) {
     return new Promise( function(success, error) {
         var origData = data;
+        var fkey;
         origData["fkey"] = "";
         var encryptedFile = { "id":data["id"]};
         function isFileFinished(){
@@ -256,51 +257,43 @@ function encryptFile(data, key) {
                     return;
                 }
             }
-            success({"data":origData, "result":encryptedFile});
+            success();
         }
         encryptedFile["id"] = origData["id"];
-        encryptChar(origData["fname"], key)
-            .catch(error)
+        return encryptChar(origData["fname"], key)
             .then(function(result){
                 encryptedFile["fname"] = result["result"];
-                isFileFinished();
-            });
-        // create key for file encryption
-        window.crypto.subtle.generateKey(
-            {
-                name: "AES-GCM",
-                length: 256, //can be  128, 192, or 256
-            },
-            true,
-            ["encrypt", "decrypt"]
-        )
-            .then(function(fkey){
+                // create key for file encryption
+                return window.crypto.subtle.generateKey(
+                    {
+                        name: "AES-GCM",
+                        length: 256, //can be  128, 192, or 256
+                    },
+                    true,
+                    ["encrypt", "decrypt"]
+                )
+            })
+            .then(function(newfkey){
+                fkey = newfkey;
                 var iv = window.crypto.getRandomValues(new Uint8Array(12));
                 // Store Key
-                window.crypto.subtle.wrapKey(
+                return window.crypto.subtle.wrapKey(
                     "jwk",
                     fkey,
                     key,
                     {
                         name: "AES-GCM",
-                        //ToDo: Save IV
                         iv: iv,
                     }
-                )
-                    .then(function(wrapped){
-                        encryptedFile["fkey"] = JSON.stringify({"iv":_arrayBufferToBase64(iv), "data":_arrayBufferToBase64(wrapped)});
-                        isFileFinished();
-                    })
-                    .catch(error);
-                encryptChar(origData["data"], fkey)
-                    .catch(error)
-                    .then(function(result){
-                        encryptedFile["data"] = result["result"];
-                        isFileFinished();
-                    });
+                )})
+            .then(function(wrapped){
+                encryptedFile["fkey"] = JSON.stringify({"iv":_arrayBufferToBase64(iv), "data":_arrayBufferToBase64(wrapped)});
+                encryptChar(origData["data"], fkey);
             })
-            .catch(error);
-        });
+            .then(function(result){
+                encryptedFile["data"] = result["result"];
+                return {"data":origData, "result":encryptedFile};
+            });
     });
 }
 function decryptFile(data, key) {
