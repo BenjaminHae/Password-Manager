@@ -37,7 +37,7 @@ function decryptChar(data, key){
         });
 }
 //data: password, salt, iterations
-function deriveKey(data, success, error){
+function deriveKey(data){
     var abdata = str2ab(data["password"]);
     var saltBuffer = str2ab(data["salt"]);
     return window.crypto.subtle.importKey(
