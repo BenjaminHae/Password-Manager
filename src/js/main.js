@@ -495,9 +495,10 @@ function downloadf(id){
                                 $("#messagewait").modal("hide");
                             });
                     });
+            }
         }
     });
-};
+}
 function emptyTable() {
     datatablestatus.clear();
 }
