@@ -484,16 +484,13 @@ function downloadf(id){
                 }
                 decryptFile(filedata, secretkey)
                     .catch(downloadError)
-                    .then(function(decryptedFile){
-                        decryptChar(filedata['data'], fkey)
-                            .catch(downloadError)
-                            .then(function(result){
-                                var data = result["result"];
-                                var typedata = data.substring(5,data.search(";"));
-                                data = data.substring(data.search(",")+1);
-                                saveAs(base64toBlob(data,typedata),fname);
-                                $("#messagewait").modal("hide");
-                            });
+                    .then(function(result){
+                        decryptedFile = result["result"];
+                        var data = decryptedFile["data"]
+                        var typedata = data.substring(5, data.search(";"));
+                        data = data.substring(data.search(",")+1);
+                        saveAs(base64toBlob(data,typedata), decryptedFile["name"]);
+                        $("#messagewait").modal("hide");
                     });
             }
         }
