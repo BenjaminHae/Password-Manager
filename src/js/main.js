@@ -911,19 +911,21 @@ $(document).ready(function(){
                         var data = e.target.result;
                         try{
                             $("#showdetails").modal("hide");
-                            encryptFile({"id":fileid, "fname":fname, "data":data}, secretkey, function(result){
-                                $.post('rest/uploadfile.php',result["result"],function(msg){
-                                    if(msg=='1') {
-                                        $('#uploadfiledlg').modal("hide"); 
-                                        showMessage('success','File uploaded!', false); 
-                                    }
-                                    else {
-                                        $('#uploadfiledlg').modal("hide"); 
-                                        showMessage('danger','ERROR! Try again!', false); 
-                                    }
-                                    reloadAccounts();
-                                });
-                            }, defaultError);
+                            encryptFile({"id":fileid, "fname":fname, "data":data}, secretkey)
+                                .then(function(result){
+                                    $.post('rest/uploadfile.php',result["result"],function(msg){
+                                        if(msg=='1') {
+                                            $('#uploadfiledlg').modal("hide"); 
+                                            showMessage('success','File uploaded!', false); 
+                                        }
+                                        else {
+                                            $('#uploadfiledlg').modal("hide"); 
+                                            showMessage('danger','ERROR! Try again!', false); 
+                                        }
+                                        reloadAccounts();
+                                    });
+                                })
+                                .catch(defaultError);
                         }
                         catch (error) {
                             $('#uploadfiledlg').modal("hide"); 
