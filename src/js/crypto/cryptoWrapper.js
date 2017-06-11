@@ -104,14 +104,11 @@ function storeKey(data){
                 success(data);
             }
         }
-        encryptChar(data["sk"], data["salt"])
-            .catch(function(err) {
-                error({"data":data, "routine":"storeKey-secretkey", "error":err});
-            })
-            .then(function(sk) {
-                sessionStorage.pwdsk = sk["result"];
-                stored();
-            });
+        getDB(function(storage){
+            storage.put({id: 1, key: data["sk"]});
+            stored();
+        });
+        
         encryptChar(data["confusion_key"], data["salt"])
             .catch(function(err) {
                 error({"data":data, "routine":"storeKey-confkey", "error":err});
@@ -124,18 +121,13 @@ function storeKey(data){
 }
 function retrieveKey(salt){
     return new Promise( function(success, error) {
-        if(!sessionStorage.pwdsk) {
-            success("");
-        }
-        else {
-            decryptChar(sessionStorage.pwdsk, salt)
-                .catch(function(err){
-                    error({"data":salt, "routine":"retrieveKey", "error":err});
-                })
-                .then(function(key){
-                    success(key["result"]);
-                });
-        }
+        getDB(function(storage){
+            var getData = store.get(1);
+            getData.onsuccess = function() {
+                var key = getData.result.key;
+                success(key);
+            };
+        });
     });
 }
 function SHA512(value){
@@ -352,6 +344,27 @@ function decryptArray(enc_arr, key) {
             })(enc_arr[x], x);
         }
     });
+}
+//Get an instance of the indexedDB and do something
+function getDB(callback){
+	var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
+    var open = indexedDB.open("PasswordManagerDB", 1);
+    open.onugradeneeded = function() {
+        var db = open.result;
+	    var store = db.createObjectStore("keyStore", {keyPath: "id"});
+    };
+    open.onsuccess = function() {
+	    var db = open.result;
+	    var tx = db.transaction("keyStore", "readwrite");
+	    var store = tx.objectStore("keyStore");
+
+	    callback(store)
+
+	    // Close the db when the transaction is done
+	    tx.oncomplete = function() {
+	        db.close();
+	    };
+    };
 }
 function ab2str(buf) {
   return String.fromCharCode.apply(null, new Uint16Array(buf));
