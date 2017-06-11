@@ -306,19 +306,19 @@ function decryptFile(data, key) {
 
         return window.crypto.subtle.unwrapKey(
             "jwk", //"jwk", "raw", "spki", or "pkcs8" (whatever was used in wrapping)
-            _base64ToArrayBuffer(fkey["data"]);
-                key, //the AES-GCM key with "unwrapKey" usage flag
-                {   //these are the wrapping key's algorithm options
-                    name: "AES-GCM",
+            _base64ToArrayBuffer(fkey["data"]),
+            key, //the AES-GCM key with "unwrapKey" usage flag
+            {   //these are the wrapping key's algorithm options
+                name: "AES-GCM",
                     iv: _base64ToArrayBuffer(fkey["iv"]), //The initialization vector you used to encrypt
-                },
-                {   //this what you want the wrapped key to become (same as when wrapping)
-                    name: "AES-CBC",
-                    length: 256
-                },
-                false,
-                ["decrypt"]
-            )
+            },
+            {   //this what you want the wrapped key to become (same as when wrapping)
+                name: "AES-CBC",
+                length: 256
+            },
+            false,
+            ["decrypt"]
+        )
             .then(function(fkey){
                 //returns a key object
                 delete origData["key"];
@@ -329,7 +329,7 @@ function decryptFile(data, key) {
                 isFileFinished();
                 return {"data":origData, "result":decryptedFile};
             });
-        });
+    });
 }
 function decryptArray(enc_arr, key) {
     return new Promise( function(success, error) {
