@@ -245,7 +245,7 @@ function decryptFile(data, key) {
         decryptedFile["name"] = data["name"];
         delete origData["status"];
 
-        decryptPassword({"pass":origData["key"], "name":origData["name"]}, key)
+        decryptPassword({"enpassword":origData["key"], "name":origData["name"]}, key)
             .catch(error)
             .then(function(result){
                 var fkey = result["result"];
