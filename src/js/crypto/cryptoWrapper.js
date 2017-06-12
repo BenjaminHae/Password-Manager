@@ -352,11 +352,13 @@ function getDB(callback){
     open.onugradeneeded = function() {
         var db = open.result;
 	    var store = db.createObjectStore("keyStore", {keyPath: "id"});
+        var index = store.createIndex("ID", ["id"]);
     };
     open.onsuccess = function() {
 	    var db = open.result;
 	    var tx = db.transaction("keyStore", "readwrite");
 	    var store = tx.objectStore("keyStore");
+        var index = store.index("ID");
 
 	    callback(store)
 
