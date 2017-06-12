@@ -347,20 +347,21 @@ function decryptArray(enc_arr, key) {
 }
 //Get an instance of the indexedDB and do something
 function getDB(callback){
+    const dbName = "PasswordManagerDB";
+    const storeName = "keyStore";
+    const dbVersion = 1;
 	var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
-    var open = indexedDB.open("PasswordManagerDB", 1);
-    open.onugradeneeded = function() {
+    var open = indexedDB.open(dbName, dbVersion);
+    open.onupgradeneeded = function() {
         var db = open.result;
-	    var store = db.createObjectStore("keyStore", {keyPath: "id"});
-        var index = store.createIndex("ID", ["id"]);
+	    var store = db.createObjectStore(storeName, {keyPath: "id"});
     };
     open.onsuccess = function() {
 	    var db = open.result;
-	    var tx = db.transaction("keyStore", "readwrite");
-	    var store = tx.objectStore("keyStore");
-        var index = store.index("ID");
+	    var tx = db.transaction(storeName, "readwrite");
+	    var store = tx.objectStore(storeName);
 
-	    callback(store)
+	    callback(store);
 
 	    // Close the db when the transaction is done
 	    tx.oncomplete = function() {
