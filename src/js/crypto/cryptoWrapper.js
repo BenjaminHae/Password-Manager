@@ -60,18 +60,18 @@ function deriveKey(data){
                 [ "encrypt", "decrypt", "wrapKey", "unwrapKey" ]
             )
         })
-        .then(function (webKey) {
-            return crypto.subtle.exportKey("jwk", webKey);
-        })
+        .then(function(webKey) {
+            return {"data":data, "result":webKey};
+        });
+}
+function exportKey(key){
+    return crypto.subtle.exportKey("jwk", webKey)
         .then(function (buffer) {
             return {"data":data, "result":buffer["k"]};
         })
         .catch(function(err){
             throw {"data":data, "routine":"deriveKey", "error":err};
         });
-}
-function exportKey(key){
-    return key;
 }
 function importKey(key){
     return window.crypto.subtle.importKey(
