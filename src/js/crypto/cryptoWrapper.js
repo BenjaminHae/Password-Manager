@@ -65,12 +65,12 @@ function deriveKey(data){
         });
 }
 function exportKey(key){
-    return crypto.subtle.exportKey("jwk", webKey)
+    return crypto.subtle.exportKey("jwk", key)
         .then(function (buffer) {
-            return {"data":data, "result":buffer["k"]};
+            return {"data":key, "result":buffer["k"]};
         })
         .catch(function(err){
-            throw {"data":data, "routine":"deriveKey", "error":err};
+            throw {"data":key, "routine":"deriveKey", "error":err};
         });
 }
 function importKey(key){
