@@ -110,19 +110,19 @@ function storeKey(data){
         });
         
         encryptChar(data["confusion_key"], data["salt"])
-            .catch(function(err) {
-                error({"data":data, "routine":"storeKey-confkey", "error":err});
-            })
             .then(function(confkey) {
                 sessionStorage.confusion_key = confkey["result"];
                 stored();
+            })
+            .catch(function(err) {
+                error({"data":data, "routine":"storeKey-confkey", "error":err});
             });
     });
 }
 function retrieveKey(salt){
     return new Promise( function(success, error) {
         getDB(function(storage){
-            var getData = store.get(1);
+            var getData = storage.get(1);
             getData.onsuccess = function() {
                 var key = getData.result.key;
                 success(key);
@@ -142,7 +142,6 @@ function decryptPassword(data, key){
         else
             confkey = getconfkey(PWsalt);
         decryptChar(data["enpassword"], key)
-            .catch(error)
             .then(function(result) {
                 // no timeout needed as it's already async by using decryptChar
                 if (result["result"]==""){
@@ -150,7 +149,8 @@ function decryptPassword(data, key){
                     return;
                 }
                 success({"data":data, "result":get_orig_pwd(confkey, PWsalt, String(CryptoJS.SHA512(data["name"])), ALPHABET, result["result"])});
-            });
+            })
+            .catch(error);
     });
 }
 function encryptPassword(data, key){
@@ -162,8 +162,8 @@ function encryptPassword(data, key){
             confkey = getconfkey(PWsalt);
         pass = gen_temp_pwd(confkey,PWsalt,String(CryptoJS.SHA512(data["name"])),ALPHABET,data["pass"]);
         encryptChar(pass, key)
-            .catch(error)
-            .then(success);
+            .then(success)
+            .catch(error);
     });
 }
 function decryptAccount(data, key){
@@ -188,11 +188,11 @@ function decryptAccount(data, key){
             }
             (function(data, item, key, decryptedAccount){
                 decryptChar(data[item], key)
-                    .catch(error)
                     .then(function(result){
                         decryptedAccount[item] = result["result"];
                         isAccountFinished();
-                    });
+                    })
+                    .catch(error);
             })(data, item, key, decryptedAccount);
         }
     });
@@ -217,22 +217,22 @@ function encryptAccount(data, key, confkey){
             passwordData["confkey"] = confkey;
         }
         encryptPassword(passwordData, key)
-            .catch(error)
             .then(function(result){
                 encryptedAccount["newpwd"] = result["result"];
                 isAccountFinished();
-            });
+            })
+            .catch(error);
         for (item in data){
             if (item == "index"||item == "newpwd"){
                 continue;
             }
             (function(data, item, key, encryptedAccount){
                 encryptChar(data[item], key)
-                    .catch(error)
                     .then(function(result){
                         encryptedAccount[item] = result["result"];
                         isAccountFinished();
-                    });
+                    })
+                    .catch(error);
             })(data, item, key, encryptedAccount);
         }
     });
@@ -336,11 +336,11 @@ function decryptArray(enc_arr, key) {
         for (var x in enc_arr){
             (function(item, x){
                 decryptChar(item, key)
-                    .catch(error)
                     .then(function(data){
                         dec_array[x] = data["result"];
                         arr_done();
-                    });
+                    })
+                    .catch(error);
             })(enc_arr[x], x);
         }
     });
