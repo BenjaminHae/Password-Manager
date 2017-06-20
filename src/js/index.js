@@ -107,10 +107,10 @@ function dataReady(data){
                     return;
                 }
                 storeKey({"sk":pwdsk, "confusion_key":confkey,"salt":PWsalt})
-                    .catch(defaultError)
                     .then(function(){
                         window.location.href="./password.php";
-                    });
+                    })
+                    .catch(defaultError);
             });
         });
     });
@@ -126,7 +126,6 @@ function dataReady(data){
             var secretkey='';
             //derive Secret key
             deriveKey({"password":reducedinfo(pwd,default_letter_used), "salt":JSsalt, "iterations":500})
-                .catch(defaultError)
                 .then(function(derivedKey){
                     secretkey = derivedKey["result"];
                     return exportKey(secretkey)
@@ -134,7 +133,6 @@ function dataReady(data){
                 .then(function(result){
                     return deriveKey({"password":result["result"], "salt":JSsalt, "iterations":500});
                 })
-                .catch(defaultError)
                 .then(function(result){
                     return exportKey(result["result"]);
                 })
@@ -157,18 +155,18 @@ function dataReady(data){
                                 .then(function(result){
                                     return deriveKey({"password":SHA512(pwd+result["result"]), "salt":JSsalt, "iterations":500})
                                 })
-                                .catch(defaultError)
                                 .then(function(confkey){
                                     return exportKey(confkey["result"]);
                                 })
                                 .then(function(confkey){
                                     setCookie("username",user);
                                     storeKey({"sk":secretkey, "confusion_key":confkey["result"],"salt":PWsalt})
-                                        .catch(defaultError)
                                         .then(function(){
                                             window.location.href="./password.php";
-                                        });
-                                });
+                                        })
+                                        .catch(defaultError);
+                                })
+                                .catch(defaultError);
                         }else{
                             $("#othererror").show();
                             $("#chk").attr("value", "Login");
@@ -176,7 +174,8 @@ function dataReady(data){
                         }
                     });
 
-                });
+                })
+                .catch(defaultError);
         }
         setTimeout(process,50);
     }); 

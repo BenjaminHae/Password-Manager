@@ -90,10 +90,10 @@ function add_account(acc, pass, other, callback){
         other["_system_passwordLastChangeTime"] = Math.floor(Date.now() / 1000);
     other = JSON.stringify(other);
     encryptAccount({"name":acc, "newpwd":pass, "other":other}, secretkey)
-        .catch(defaultError)
         .then(function(result){
             $.post("rest/insert.php",result["result"],callback);
-        });
+        })
+        .catch(defaultError);
 }
 function import_raw(json){
     json=JSON.parse(sanitize_json(json));
@@ -118,13 +118,13 @@ function import_raw(json){
                 showMessage('warning',"Fail to add "+acc+", please try again manually later.", true); 
             else{
                 encryptFile({id:msg, fname:fname, data:fdata}, secretkey)
-                    .catch(defaultError)
                     .then(function(result){
                         $.post('rest/uploadfile.php',result["result"],function(msg){
                             if(msg!='1')
                                 showMessage('warning',"Fail to add file for " + result["data"] + ", please try again manually later.", true);
                         });
-                    });
+                    })
+                    .catch(defaultError);
                 }
         }
         if(acc==''||pass==''||fname=='') {
@@ -245,7 +245,6 @@ function dataReady(data){
     if(!data["fields_allow_change"])
         $("#changefieldsnav").hide();
     retrieveKey(salt2)
-        .catch(defaultError)
         .then(function(key){
             if (key == ""){ 
                 quitpwd("Login failed, due to missing secretkey");
@@ -253,7 +252,6 @@ function dataReady(data){
             }
             return importKey(key);
         })
-        .catch(defaultError)
         .then(function(sk) {
             secretkey = sk;
             // show last succesfull Login
@@ -291,7 +289,6 @@ function dataReady(data){
                 accountarray[index] = { "index":index, "other": {}, "fname": '' };
                 (function(index){
                     decryptAccount(accounts[i], secretkey)
-                        .catch(defaultError)
                         .then(function(result){
                             var account = result["result"];
                             accountarray[index]["name"] = account["name"];
@@ -309,23 +306,25 @@ function dataReady(data){
                             if (decryptionsLeft <= 0){
                                 accountsDecrypted();
                             }
-                        });
+                        })
+                        .catch(defaultError);
                 })(index);
             }
             for(var i = 0; i<fdata.length; i++) {
                 var index = fdata[i]["index"];
                 accountarray[index]['fkey'] = fdata[i]['fkey'];
                 decryptChar(fdata[i]['fname'], secretkey)
-                    .catch(defaultError)
                     .then(function(result){
                         accountarray[index]['fname'] =  result["result"];
                         decryptionsLeft -= 1;
                         if (decryptionsLeft <= 0){
                             accountsDecrypted();
                         }
-                    });
+                    })
+                    .catch(defaultError);
             }
-        });
+        })
+        .catch(defaultError);
 }
 function accountsDecrypted(fdata){
     callPlugins("accountsReady");
@@ -483,7 +482,6 @@ function downloadf(id){
                     $("#messagewait").modal("hide");
                 }
                 decryptFile(filedata, secretkey)
-                    .catch(downloadError)
                     .then(function(result){
                         decryptedFile = result["result"];
                         var data = decryptedFile["data"]
@@ -491,7 +489,8 @@ function downloadf(id){
                         data = data.substring(data.search(",")+1);
                         saveAs(base64toBlob(data,typedata), decryptedFile["name"]);
                         $("#messagewait").modal("hide");
-                    });
+                    })
+                    .catch(downloadError);
             }
         }
     });
@@ -526,21 +525,19 @@ $(document).ready(function(){
                 }
                 else{
                     retrieveKey(PWsalt)
-                        .catch(defaultError)
                         .then(function(key) {
                             return encryptChar(key, pin+msg)
                         })
-                        .catch(defaultError)
                         .then(function(result){
                             var encryptsec = result["result"];
                             return encryptChar(getconfkey(PWsalt), pin+msg)
                         })
-                        .catch(defaultError)
                         .then(function(result){
                             setPINstore(device, salt, encryptsec, result["result"]);
                             showMessage('success', 'PIN set, use PIN to login next time');
                             $('#pin').modal('hide');
-                        });
+                        })
+                        .catch(defaultError);
                 }
             });
         }
@@ -653,7 +650,6 @@ $(document).ready(function(){
             other = JSON.stringify(other);
             var name = $("#edititeminput").val();
             encryptAccount({"name":name,"newpwd":newpwd,"index":id,"other":other}, secretkey)
-                .catch(defaultError)
                 .then(function(result){
                     var origData = result["data"];
                     var account = result["result"];
@@ -671,7 +667,8 @@ $(document).ready(function(){
                         for (x in fields)
                             $("#edititeminput"+x).attr("readonly",false);
                     });
-                });
+                })
+                .catch(defaultError);
         }
         setTimeout(process,50);
     }); 
@@ -715,21 +712,21 @@ $(document).ready(function(){
                 }
                 pkey = pbkdf2_enc(a, PWsalt, 500);
                 encryptChar(JSON.stringify(p.data))
-                    .catch(defaultError)
                     .then(function(result){
                         p.data = result["result"];
                         done -= 1;
                         if (done <= 0)
                             processFinished();
-                    });
+                    })
+                    .catch(defaultError);
                 encryptChar(JSON.stringify(p.fdata), pkey)
-                    .catch(defaultError)
                     .then(function(result){
                         p.fdata = result["result"];
                         done -= 1;
                         if (done <= 0)
                             processFinished();
-                    });
+                    })
+                    .catch(defaultError);
             }
             function first(callback)
             {
@@ -758,7 +755,6 @@ $(document).ready(function(){
         $("#editAccountShowPassword").popover('hide');
         var id = parseInt($("#edit").data('id'));
         decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey)
-            .catch(defaultError)
             .then(function(result){
                 var thekey = result["result"];
                 if (thekey==""){
@@ -767,7 +763,8 @@ $(document).ready(function(){
                 }
                 $("#edititeminputpw").val(thekey);
                 $("#editAccountShowPassword").addClass("collapse");
-            });
+            })
+            .catch(defaultError);
     });
     $("#delbtn").click(function(){
         delepw($("#edit").data('id'));
@@ -811,7 +808,6 @@ $(document).ready(function(){
                 for (var x in accountarray) {
                     (function(x, accarray, newconfkey){
                         decryptPassword(accountarray[x], secretkey)
-                            .catch(defaultError)
                             .then(function(result) {
                                 var accout = result["data"];
                                 var raw_pass = result["result"];
@@ -825,25 +821,26 @@ $(document).ready(function(){
                                     raw_fkey = gen_temp_pwd(newconfkey,PWsalt,SHA512(account["fname"]),ALPHABET,raw_fkey);
                                     newAccount["fk"] = raw_fkey;
                                     encryptAccount(newAccount, newsecretkey, newconfkey)
-                                        .catch(defaultError)
                                         .then(function(result){
                                             accarray[x] = result["result"];
                                             decryptionsLeft -= 1;
                                             if (decryptionsLeft <= 0) {
                                                 finishPasswordChange();
                                             }
-                                        });
+                                        })
+                                        .catch(defaultError);
                                 }
                                 if (newAccount["fname"] != "") {
                                     decryptPassword({"name":account['fname'], "enpassword":account['fkey']}, secretkey)
-                                        .catch(defaultError)
                                         .then(function(result){ 
                                             saveAccount(result["result"]);
-                                        });
+                                        })
+                                        .catch(defaultError);
                                 }
                                 else
                                     saveAccount("1");
-                            });
+                            })
+                            .catch(defaultError);
                     })(x, accarray, newconfkey);
                 }
             }
@@ -1002,23 +999,23 @@ function edit(row){
     $("#edit").modal("show");
 }
 function clicktoshow(id){ 
-    timeout=default_timeout+Math.floor(Date.now() / 1000);
-    id=parseInt(id);
+    timeout = default_timeout+Math.floor(Date.now() / 1000);
+    id = parseInt(id);
     decryptPassword({"name":accountarray[id]["name"], "enpassword":accountarray[id]["enpassword"]}, secretkey)
-        .catch(defaultError)
         .then(function(result){
-        var thekey = result["result"];
-        if (thekey==""){
-            $("#"+id).text("Oops, some error occurs!");
-            return;
-        }
-        $("#"+id).empty()
-            .append($('<span class="pwdshowbox"></span>').css('font-family','passwordshow'))
-            .append($('<a title="Hide" class="cellOptionButton"></a>')
-                .on('click',{"index":id},function(event){clicktohide(event.data.index);}) 
-                    .append($('<span class="glyphicon glyphicon-eye-close"></span>')));
-        $("#"+id+" > .pwdshowbox").text(thekey);
-    });
+            var thekey = result["result"];
+            if (thekey==""){
+                $("#"+id).text("Oops, some error occurs!");
+                return;
+            }
+            $("#"+id).empty()
+                .append($('<span class="pwdshowbox"></span>').css('font-family','passwordshow'))
+                .append($('<a title="Hide" class="cellOptionButton"></a>')
+                    .on('click',{"index":id},function(event){clicktohide(event.data.index);}) 
+                        .append($('<span class="glyphicon glyphicon-eye-close"></span>')));
+            $("#"+id+" > .pwdshowbox").text(thekey);
+        })
+        .catch(defaultError);
 } 
 function showuploadfiledlg(id){
     $("#uploadfiledlg").modal("hide");

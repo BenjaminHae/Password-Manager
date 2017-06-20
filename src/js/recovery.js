@@ -69,22 +69,20 @@ function gen_key()
 {
     var pass=$("#pwd").val();
     return deriveKey({"password":reducedinfo(pass,ALPHABET), "salt":JSsalt, "iterations":500})
-        .catch(defaultError)
         .then(function(key){
             secretkey=String(key);
             return deriveKey({"password":SHA512(pass+secretkey), "salt":JSsalt, "iterations":500})
         })
-        .catch(defaultError)
         .then(function(key){
             confkey=String(key);
             secretkey = SHA512(secretkey+PWsalt);
             return deriveKey({"password":secretkey, "salt":PWsalt, "iterations":16000})
         })
-        .catch(defaultError)
         .then(function(key){
             dkey = key;
             return ;
-        });
+        })
+        .catch(defaultError);
 }
 function gen_account_array(enc_account_array) {
     return decryptArray(enc_account_array, secretkey);
@@ -106,14 +104,14 @@ function gen_fdata_array(fkey_array,enc_fdata_array)
         for (var x in enc_fdata_array){
             (function(fdata, x){
                 decryptChar(fdata, fkey_array[x])
-                    .catch(error)
                     .then(function(data) {
                         var tempchar;
                         if (tempchar == "") 
                             tempchar = "Oops, there's some errors!"
                         fdata_array[x] = tempchar;
                         fdata_done();
-                    });
+                    })
+                    .catch(error);
             })(enc_fdata_array[x], x);
         }
     });
@@ -135,7 +133,6 @@ function gen_pass_array(account_array,enc_pass_array)
         for (var x in enc_pass_array){
             (function(pass, x) {
                 decryptPassword({"enpassword": pass, "confkey": confkey, "name":account_array[x]}, secretkey)
-                    .catch(error)
                     .then(function(data){
                         var tempchar;
                         tempchar = data["result"];
@@ -144,7 +141,8 @@ function gen_pass_array(account_array,enc_pass_array)
                         }
                         pass_array[x] = tempchar;
                         pass_done();
-                    });
+                    })
+                    .catch(error);
             })(enc_pass_array[x], x);
         }
     });
@@ -163,7 +161,6 @@ function gen_fkey_array(fname_array,enc_fkey_array)
         for (var x in enc_fkey_array){
             (function(fkey, x) {
                 decryptChar(fkey, secretkey)
-                    .catch(error)
                     .then(function(data) {
                         var tempchar;
                         tempchar = data["result"];
@@ -177,7 +174,8 @@ function gen_fkey_array(fname_array,enc_fkey_array)
                         }
                         fkey_array[x] = tempchar;
                         fkey_done();
-                    });
+                    })
+                    .catch(error);
             })(enc_fkey_array[x],x);
         }
     });
@@ -247,7 +245,7 @@ function rec(txt){
     ALPHABET = json.ALPHABET;
     function process(){       
         gen_key()
-            .catch(defaultError)
+            .catch(defaultError)//TODO fix error handling order
             .then(function(){
                 var enc_pass=new Array();
                 var enc_acc=new Array();
@@ -267,7 +265,6 @@ function rec(txt){
                 json.data = JSON.parse(data["result"]);
                 if(typeof json.fdata != 'undefined'){
                     return decryptChar(json.fdata, dkey)
-                        .catch(defaultError)
                         .then(function(data) {
                             json.fdata = data["result"];
                             if(json.fdata.status == 'OK') {
@@ -277,7 +274,8 @@ function rec(txt){
                             else {
                                 has_file = 0;
                             }
-                        });
+                        })
+                        .catch(defaultError);
                 } 
                 else 
                     has_file = 0;
@@ -297,17 +295,14 @@ function rec(txt){
                 }
                 return gen_account_array(enc_acc);
             })
-            .catch(defaultError)
             .then(function(accounts){
                 acc_array = accounts;
                 return gen_other_array(enc_other);
             })
-            .catch(defaultError)
             .then(function(other){
                 other_array = other;
                 return gen_pass_array(acc_array, enc_pass);
             })
-            .catch(defaultError)
             .then(function(pass){
                 pass_array = pass;
                 if(has_file==1) {
@@ -317,21 +312,18 @@ function rec(txt){
                         enc_fdata[x]=json.fdata[x][2];
                     }
                     return gen_fname_array(enf_fname)
-                        .catch(defaultError)
                         .then(function(fname){
                             fname_array = fname;
                             return gen_fkey_array(fname_array,enc_fkey);
                         })
-                        .catch(defaultError)
                         .then(function(fkey){
                             fkey_array = fkey;
                             return gen_fdata_array(fkey_array,enc_fdata);
                         })
-                        .catch(defaultError)
                         .then(function(fdata){
                             fdata_array = fdata;
                             return;
-                        });
+                        })
                 }
                 else
                     return;
@@ -363,7 +355,8 @@ function rec(txt){
                 $("#chk").attr("value", "RECOVER IT!");
                 $("#raw_button").show();
                 $("#csv_button").show();
-            });
+            })
+            .catch(defaultError);
     }
     setTimeout(process,50);
 }
