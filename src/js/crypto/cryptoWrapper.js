@@ -37,7 +37,9 @@ function deriveKey(data){
     });
 }
 function exportKey(key){
-    return String(key);
+    return new Promise( function(success, error) {
+        success({"data":key, "result":key});
+    });
 }
 function importKey(key){
     return new Promise( function(success, error) {
