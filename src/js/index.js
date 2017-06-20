@@ -128,8 +128,8 @@ function dataReady(data){
             deriveKey({"password":reducedinfo(pwd,default_letter_used), "salt":JSsalt, "iterations":500})
                 .catch(defaultError)
                 .then(function(derivedKey){
-                    secretkey = exportKey(derivedKey["result"]);
-                    deriveKey({"password":secretkey, "salt":JSsalt, "iterations":500})
+                    secretkey = derivedKey["result"];
+                    deriveKey({"password":exportKey(derivedKey["result"]), "salt":JSsalt, "iterations":500})
                         .catch(defaultError)
                         .then(function(result){
                             login_sig = result["result"];
