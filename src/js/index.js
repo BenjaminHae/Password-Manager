@@ -5,9 +5,9 @@ var usepin;
 var randomLoginStamp;
 var default_letter_used;
 function defaultError(error){
-    alert("Error in "+error["routine"]+": "+error["error"]+"\r\nDetails in console.");
     console.log("Error in "+error["routine"]+": "+error["error"]+"\r\nData:");
     console.log(error["data"]);
+    alert("Error in "+error["routine"]+": "+error["error"]+"\r\nDetails in console.");
 }
 function isSupportFileApi() {
     if(window.File && window.FileList && window.FileReader && window.Blob) {
