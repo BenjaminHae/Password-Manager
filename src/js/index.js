@@ -129,41 +129,53 @@ function dataReady(data){
                 .catch(defaultError)
                 .then(function(derivedKey){
                     secretkey = derivedKey["result"];
-                    deriveKey({"password":exportKey(derivedKey["result"]), "salt":JSsalt, "iterations":500})
-                        .catch(defaultError)
-                        .then(function(result){
-                            login_sig = result["result"];
-                            $.post("rest/check.php",{pwd:SHA512(exportKey(login_sig)+user),  user: user},function(msg){
-                                $(".errorhint").hide();
-                                if(msg==0){
-                                    $("#nouser").show();
-                                    $("#chk").attr("value", "Login");
-                                    $("#chk").attr("disabled", false);
-                                }else if(msg==7){
-                                    $("#blockip").show();
-                                }else if(msg==8){
-                                    $("#accountban").show();
-                                    $("#chk").attr("value", "Login");
-                                    $("#chk").attr("disabled", false);
-                                }else if(msg==9){
-                                    deriveKey({"password":SHA512(pwd+exportKey(secretkey)), "salt":JSsalt, "iterations":500})
+                    return exportKey(secretkey)
+                })
+                .then(function(result){
+                    return deriveKey({"password":result["result"], "salt":JSsalt, "iterations":500});
+                })
+                .catch(defaultError)
+                .then(function(result){
+                    return exportKey(result["result"]);
+                })
+                .then(function(result){
+                    login_sig = result["result"];
+                    $.post("rest/check.php",{pwd:SHA512(login_sig+user),  user: user},function(msg){
+                        $(".errorhint").hide();
+                        if(msg==0){
+                            $("#nouser").show();
+                            $("#chk").attr("value", "Login");
+                            $("#chk").attr("disabled", false);
+                        }else if(msg==7){
+                            $("#blockip").show();
+                        }else if(msg==8){
+                            $("#accountban").show();
+                            $("#chk").attr("value", "Login");
+                            $("#chk").attr("disabled", false);
+                        }else if(msg==9){
+                            exportKey(secretkey)
+                                .then(function(result){
+                                    return deriveKey({"password":SHA512(pwd+result["result"]), "salt":JSsalt, "iterations":500})
+                                })
+                                .catch(defaultError)
+                                .then(function(confkey){
+                                    return exportKey(confkey["result"]);
+                                })
+                                .then(function(confkey){
+                                    setCookie("username",user);
+                                    storeKey({"sk":secretkey, "confusion_key":confkey["result"],"salt":PWsalt})
                                         .catch(defaultError)
-                                        .then(function(confkey){
-                                            setCookie("username",user);
-                                            storeKey({"sk":secretkey, "confusion_key":exportKey(confkey["result"]),"salt":PWsalt})
-                                                .catch(defaultError)
-                                                .then(function(){
-                                                    window.location.href="./password.php";
-                                                });
+                                        .then(function(){
+                                            window.location.href="./password.php";
                                         });
-                                }else{
-                                    $("#othererror").show();
-                                    $("#chk").attr("value", "Login");
-                                    $("#chk").attr("disabled", false);
-                                }
-                            });
+                                });
+                        }else{
+                            $("#othererror").show();
+                            $("#chk").attr("value", "Login");
+                            $("#chk").attr("disabled", false);
+                        }
+                    });
 
-                        });
                 });
         }
         setTimeout(process,50);
