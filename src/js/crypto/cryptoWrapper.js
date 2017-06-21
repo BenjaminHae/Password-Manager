@@ -109,14 +109,8 @@ function storeKey(data){
             stored();
         });
         
-        encryptChar(data["confusion_key"], data["salt"])
-            .then(function(confkey) {
-                sessionStorage.confusion_key = confkey["result"];
-                stored();
-            })
-            .catch(function(err) {
-                error({"data":data, "routine":"storeKey-confkey", "error":err});
-            });
+        sessionStorage.confusion_key = data["confusion_key"];
+        stored();
     });
 }
 function retrieveKey(salt){
