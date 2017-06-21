@@ -42,7 +42,10 @@ function dataReady(data){
         function process(){
             deriveKey({"password":reducedinfo($("#pwd").val(),default_letter_used), "salt":JSsalt, "iterations":500})
                 .then(function(derivedKey){
-                    return deriveKey({"password":exportKey(derivedKey["result"]), "salt":JSsalt, "iterations":500});
+                    return exportKey(derivedKey["result"]);
+                })
+                .then(function(exportedKey){
+                    return deriveKey({"password":exportedKey["result"], "salt":JSsalt, "iterations":500});
                 })
                 .then(function(login_sig){
                     $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(exportKey(login_sig["result"])+$("#user").val()),  user: $("#user").val()},function(msg){ 
