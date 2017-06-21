@@ -55,7 +55,7 @@ function deriveKey(data){
                     "hash": 'SHA-512'
                 },
                 key,
-                { "name": 'AES-CBC', "length": 256 },
+                { "name": 'AES-GCM', "length": 256 },
                 true,
                 [ "encrypt", "decrypt", "wrapKey", "unwrapKey" ]
             )
