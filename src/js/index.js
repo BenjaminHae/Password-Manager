@@ -164,9 +164,7 @@ function dataReady(data){
                                         .then(function(){
                                             window.location.href="./password.php";
                                         })
-                                        .catch(defaultError);
                                 })
-                                .catch(defaultError);
                         }else{
                             $("#othererror").show();
                             $("#chk").attr("value", "Login");
