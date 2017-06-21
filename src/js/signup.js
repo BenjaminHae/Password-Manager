@@ -48,7 +48,10 @@ function dataReady(data){
                     return deriveKey({"password":exportedKey["result"], "salt":JSsalt, "iterations":500});
                 })
                 .then(function(login_sig){
-                    $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(exportKey(login_sig["result"])+$("#user").val()),  user: $("#user").val()},function(msg){ 
+                    return exportKey(login_sig["result"]);
+                })
+                .then(function(login_sig){
+                    $.post("rest/reg.php",{email:$("#email").val(), pwd:SHA512(login_sig["result"]+$("#user").val()),  user: $("#user").val()},function(msg){ 
                         if(msg==0){
                             alert("User name already occupied, please choose another user name.");
                         }
