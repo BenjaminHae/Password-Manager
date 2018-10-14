@@ -23,7 +23,7 @@ function secondFactor_verifyJWT($jwt, $key, $aud) {
     if ($token["aud"] !== $aud) {
         error('jwt: wrong audience');
     }
-    if ($token["exp"] > time()) {
+    if ($token["exp"] < time()) {
         error('jwt: expired');
     }
     return $token;
