@@ -5,26 +5,40 @@ $listeners = array();
 
 /* create entry point
  * first parameter: hook name
- * next parameters: call parameters
+ * second parameters: call parameters
+ * third parameter: whether results are changes of the input and should be forwarded through the plugins
  * */
-function call_plugins() {
-    global listeners();
-    $num_args = func_num_args();
-    $args = func_get_args();
-    if ($num_args < 2) {
-        trigger_error("Insufficient arguments", E_USER_ERROR);
-    }
+function call_plugins($hook_name, $args, $hook_forward_results = false) {
+    global $listeners;
 
-    $hook_name = array_shift($args);
     $(!isset($listeners[$hook_name])) {
         // no plugins registered
-        return [];
+        if ($hook_forward_results) {
+            return $args;
+        }
+        else {
+            return [];
+        }
     }
     $results = [];
     foreach($listeners[$hook_name] as $func) {
-        array_push($results, $func($args));
+        $parameters = $args;
+        if ($hook_forward_results) {
+            $parameters = end($results);
+        }
+        array_push($results, $func($parameters));
     }
-    return $results
+    if ($hook_forward_results) {
+        if (count($results) > 0) {
+            return end($results);
+        }
+        else {
+            return $args;
+        }
+    }
+    else {
+        return $results;
+    }
 }
 
 /* Attach a function to a hook
