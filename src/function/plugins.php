@@ -11,7 +11,7 @@ $listeners = array();
 function call_plugins($hook_name, $args, $hook_forward_results = false) {
     global $listeners;
 
-    $(!isset($listeners[$hook_name])) {
+    if (!isset($listeners[$hook_name])) {
         // no plugins registered
         if ($hook_forward_results) {
             return $args;
@@ -49,6 +49,6 @@ function add_plugin_listener($hook, $function_name) {
     $listeners[$hook][] = $function_name;
 }
 
-foreach (glob("../functions/plugins/*.php") as $plugin) {
+foreach (glob("../function/plugins/*.php") as $plugin) {
     include "$filename";
 }

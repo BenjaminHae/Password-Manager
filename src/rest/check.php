@@ -91,7 +91,7 @@ loghistory($link, (int) $record['id'], getUserIP(), $_SERVER['HTTP_USER_AGENT'],
 // login is ok
 // now ask plugins if everything is alright
 $plugin_results = call_plugins("loginCredentialCheckSuccess", $usr);
-foreach ($plugin_result in $plugin_results) {
+foreach ($plugin_results as $plugin_result) {
     if ($plugin_result !== Null) {
         error('plugin error', $plugin_result);
     }
