@@ -23,12 +23,13 @@ function secondFactor_verifyJWT($jwt, $key, $aud) {
     if ($token["aud"] !== $aud) {
         error('jwt: wrong audience');
     }
-    if ($token["exp"] > time() {
+    if ($token["exp"] > time()) {
         error('jwt: expired');
     }
     return $token;
 }
 function secondFactor_getMailAddress($userid) {
+    global $link;
     $sql = 'SELECT `email` FROM `pwdusrrecord` WHERE `id` = ?';
     $res = sqlexec($sql, [$usr], $link);
     $record = $res->fetch(PDO::FETCH_ASSOC);
@@ -61,7 +62,7 @@ function secondFactor_loginCredentialCheckSuccess() {
     $jwt = secondFactor_createJWT($token, 5*60*1000, $_SESSION["pwd"]);
     $mailText = "Hi,\r\n";
     $mailText .= "click this link to login to your Password Manager:\r\n";
-    $mailText .= $HOSTDOMAIN"/rest/pluginEndpoint.php?plugin=secondFactor&method=showFactor&factor=";
+    $mailText .= $HOSTDOMAIN."/rest/pluginEndpoint.php?plugin=secondFactor&method=showFactor&factor=";
     $mailText .= $jwt;
     $address = secondFactor_getMailAddress($_SESSION["userid"]);
     sendMail($mailText, $address);
