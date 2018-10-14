@@ -2,6 +2,7 @@
 
 require_once dirname(__FILE__).'/../function/sqllink.php';
 require_once dirname(__FILE__).'/../function/ajax.php';
+require_once dirname(__FILE__).'/../function/plugins.php';
 session_start();
 $token = $_SESSION['session_token'];
 session_regenerate_id(true);
@@ -80,7 +81,16 @@ if (strcmp((string) $record['password'], (string) hash_pbkdf2('sha256', $pw, (st
     }
     ajaxError('loginFailed');
 }
-$_SESSION['loginok'] = 1;
+// login is ok
+// now ask plugins if everything is alright
+$plugin_results = call_plugins("loginCredentialCheckSuccess", $usr);
+foreach ($plugin_result in $plugin_results) {
+    if ($plugin_result !== Null) {
+        error('plugin error', $plugin_result);
+    }
+}
+
+$_SESSION['loginok'] = "loggedIn";
 $_SESSION['user'] = $usr;
 $_SESSION['userid'] = $record['id'];
 $_SESSION['pwd'] = $record['password'];

@@ -23,15 +23,20 @@ const ERROR_MESSAGE = [
     'fileFailed'     => 'No File Can Be Downloaded',
     'userWrong'      => 'Wrong User',
     'method'         => 'Method not allowed',
+    'noPluginFound'  => 'No plugin found',
 ];
 function ajaxError($err)
 {
     echo json_encode(['status' => 'error', 'message' => ERROR_MESSAGE[$err]]);
     die();
 }
-function error($msg)
+function error($msg, $data = Null)
 {
-    echo json_encode(['status' => 'error', 'message' => $msg]);
+    $values = ['status' => 'error', 'message' => $msg];
+    if ($data !== Null) {
+        $values['data'] = $data;
+    }
+    echo json_encode($values);
     die();
 }
 function ajaxSuccess($data = [])

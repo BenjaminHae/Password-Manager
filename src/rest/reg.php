@@ -40,6 +40,15 @@ if ($num[0] != 0) {
     $link->commit();
     ajaxError('occupiedEmail');
 }
+// everything is ok, we could sign the user up
+// check plugins first
+$plugin_results = call_plugins("signupPostChecks");
+foreach ($plugin_result in $plugin_results) {
+    if ($plugin_result !== Null) {
+        error('plugin error', $plugin_result);
+    }
+}
+
 $salt = openssl_random_pseudo_bytes(32);
 $pw = hash_pbkdf2('sha256', $pw, $salt, $PBKDF2_ITERATIONS);
 $res = sqlquery('SELECT max(`id`) FROM `pwdusrrecord`', $link);

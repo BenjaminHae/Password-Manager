@@ -45,7 +45,7 @@ function checksession($link, $refreshTimeout = true)
 {
     global $SERVER_TIMEOUT, $SERVER_SOFT_TIMEOUT, $HOSTDOMAIN;
     session_start();
-    if (!isset($_SESSION['loginok']) || $_SESSION['loginok'] != 1) {
+    if (!isset($_SESSION['loginok']) || $_SESSION['loginok'] != "loggedIn") {
         invalidateSession();
 
         return false;
