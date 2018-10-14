@@ -81,6 +81,13 @@ if (strcmp((string) $record['password'], (string) hash_pbkdf2('sha256', $pw, (st
     }
     ajaxError('loginFailed');
 }
+$_SESSION['user'] = $usr;
+$_SESSION['userid'] = $record['id'];
+$_SESSION['pwd'] = $record['password'];
+$_SESSION['fields'] = $record['fields'];
+$_SESSION['create_time'] = time();
+$_SESSION['refresh_time'] = time();
+loghistory($link, (int) $record['id'], getUserIP(), $_SERVER['HTTP_USER_AGENT'], 1);
 // login is ok
 // now ask plugins if everything is alright
 $plugin_results = call_plugins("loginCredentialCheckSuccess", $usr);
@@ -90,12 +97,6 @@ foreach ($plugin_result in $plugin_results) {
     }
 }
 
+// only now is the session really active
 $_SESSION['loginok'] = "loggedIn";
-$_SESSION['user'] = $usr;
-$_SESSION['userid'] = $record['id'];
-$_SESSION['pwd'] = $record['password'];
-$_SESSION['fields'] = $record['fields'];
-$_SESSION['create_time'] = time();
-$_SESSION['refresh_time'] = time();
-loghistory($link, (int) $record['id'], getUserIP(), $_SERVER['HTTP_USER_AGENT'], 1);
 ajaxSuccess();
