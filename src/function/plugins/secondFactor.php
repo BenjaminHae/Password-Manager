@@ -19,7 +19,7 @@ function secondFactor_createJWT($token, $expiry, $additionalSecret=""){
     return JWT::encode($token, $key, 'HS256');
 }
 function secondFactor_verifyJWT($jwt, $key, $aud) {
-    $token = JWT::decode($jwt, $key, array('HS256'));
+    $token = (array) JWT::decode($jwt, $key, array('HS256'));
     if ($token["aud"] !== $aud) {
         error('jwt: wrong audience');
     }
@@ -71,6 +71,7 @@ function secondFactor_loginCredentialCheckSuccess() {
 
 function secondFactor_HTTP_showFactor($jwt) {
     global $_COOKIE, $GLOBAL_SALT_3, $link;
+    session_start();
     $key = $GLOBAL_SALT_3.$_SESSION["pwd"];
     $token = secondFactor_verifyJWT($jwt, $key, "secondFactor");
     if ($token["sub"] !== $_SESSION["user"]) {
@@ -78,11 +79,12 @@ function secondFactor_HTTP_showFactor($jwt) {
         ajaxError('loginFailed');
     }
     $_SESSION['loginok'] = "loggedIn";
-    $tokenUnnecessary = [ "sub" => $_SESSION["user"] ];
+    $tokenUnnecessary = [ "sub" => $_SESSION["user"], "aud" => "login" ];
     $jwt = secondFactor_createJWT($tokenUnnecessary, 6*30*24*60*60*1000, $_SESSION["pwd"]);
     $_COOKIE[secondFactor_UserCookieName($_SESSION["userid"])] = $jwt;
+    ajaxSuccess(["loggedIn" => true]);
 }
 
-add_plugin_listener("loginCredentialCheckSuccess", secondFactor_loginCredentialCheckSuccess);
-add_plugin_listener("secondFactor_HTTP_showFactor", secondFactor_HTTP_showFactor);
+add_plugin_listener("loginCredentialCheckSuccess", "secondFactor_loginCredentialCheckSuccess");
+add_plugin_listener("secondFactor_HTTP_showFactor", "secondFactor_HTTP_showFactor");
 
