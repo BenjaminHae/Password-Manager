@@ -100,3 +100,10 @@ function sanitize_json(s){
     t=t.replace(/\n/g, '')
     return t.replace(/\r/g, '');
 }
+$.urlParam = function(name){
+    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    if (results) {
+        return decodeURIComponent(results[1].replace(/\+/g, '%20'));
+    }
+    return null;
+}

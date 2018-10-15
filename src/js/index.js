@@ -76,13 +76,6 @@ $(function(){
             });
     }); 
 
-    $.urlParam = function(name){
-        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-        if (results) {
-            return decodeURIComponent(results[1].replace(/\+/g, '%20'));
-        }
-        return null;
-    }
     if($.urlParam("reason")) {
         showMessage("warning", $.urlParam("reason"));
     }
@@ -109,4 +102,5 @@ $(function(){
         .catch(function(msg) {
             showMessage("warning", msg);
         });
+    callPlugins("indexLayoutReady", {});
 }); 
