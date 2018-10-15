@@ -69,9 +69,8 @@ function secondFactor_loginCredentialCheckSuccess() {
     return ["state" => "SecondFactorMissing"];
 }
 
-function secondFactor_HTTP_showFactor() {
+function secondFactor_HTTP_showFactor($jwt) {
     global $_COOKIE, $GLOBAL_SALT_3, $link;
-    $jwt = $_GET["factor"];
     $key = $GLOBAL_SALT_3.$_SESSION["pwd"];
     $token = secondFactor_verifyJWT($jwt, $key, "secondFactor");
     if ($token["sub"] !== $_SESSION["user"]) {
@@ -81,7 +80,7 @@ function secondFactor_HTTP_showFactor() {
     $_SESSION['loginok'] = "loggedIn";
     $tokenUnnecessary = [ "sub" => $_SESSION["user"] ];
     $jwt = secondFactor_createJWT($tokenUnnecessary, 6*30*24*60*60*1000, $_SESSION["pwd"]);
-    $_COOKIE[secondFacotr_UserCookieName($_SESSION["userid"])] = $jwt;
+    $_COOKIE[secondFactor_UserCookieName($_SESSION["userid"])] = $jwt;
 }
 
 add_plugin_listener("loginCredentialCheckSuccess", secondFactor_loginCredentialCheckSuccess);
