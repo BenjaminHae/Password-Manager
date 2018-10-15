@@ -5,11 +5,11 @@ echoheader();
 <script src="js/crypto/aes.js"></script>
 <script src="js/crypto/sha512.js"></script>
 <script src="js/crypto/pbkdf2.js"></script>
-<script src="js/plugin.js"></script>
 <script src="js/common/backend.js"></script>
 <script src="js/common/cryptoWrapper.js"></script>
-<script src="js/plugins/secondFactor.js"></script>
+<script src="js/plugin.js"></script>
 <script src="js/index.js"></script>
+<script src="js/plugins/secondFactor.js"></script>
     <div class="container theme-showcase">
         <div class="page-header">
             <h1>Password Manager</h1>
