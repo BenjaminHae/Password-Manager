@@ -31,7 +31,7 @@ function secondFactor_verifyJWT($jwt, $key, $aud) {
 function secondFactor_getMailAddress($userid) {
     global $link;
     $sql = 'SELECT `email` FROM `pwdusrrecord` WHERE `id` = ?';
-    $res = sqlexec($sql, [$usr], $link);
+    $res = sqlexec($sql, [$userid], $link);
     $record = $res->fetch(PDO::FETCH_ASSOC);
     if (!$record) {
         error('secondFactor: Mail Address not found');
@@ -62,7 +62,7 @@ function secondFactor_loginCredentialCheckSuccess() {
     $jwt = secondFactor_createJWT($token, 5*60*1000, $_SESSION["pwd"]);
     $mailText = "Hi,\r\n";
     $mailText .= "click this link to login to your Password Manager:\r\n";
-    $mailText .= $HOSTDOMAIN."/rest/pluginEndpoint.php?plugin=secondFactor&method=showFactor&factor=";
+    $mailText .= $HOSTDOMAIN."/index.php?secondFactorToken=";
     $mailText .= $jwt;
     $address = secondFactor_getMailAddress($_SESSION["userid"]);
     sendMail($mailText, $address);
@@ -85,4 +85,5 @@ function secondFactor_HTTP_showFactor() {
 }
 
 add_plugin_listener("loginCredentialCheckSuccess", secondFactor_loginCredentialCheckSuccess);
+add_plugin_listener("secondFactor_HTTP_showFactor", secondFactor_HTTP_showFactor);
 
