@@ -49,6 +49,4 @@ function add_plugin_listener($hook, $function_name) {
     $listeners[$hook][] = $function_name;
 }
 
-foreach (glob("../function/plugins/*.php") as $plugin) {
-    include "$filename";
-}
+include("../function/plugins/secondFactor.php");
