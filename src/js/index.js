@@ -98,9 +98,9 @@ $(function(){
             else{
                 $("#user").focus();
             }
+            callPlugins("indexLayoutReady", {});
         })
         .catch(function(msg) {
             showMessage("warning", msg);
         });
-    callPlugins("indexLayoutReady", {});
 }); 
