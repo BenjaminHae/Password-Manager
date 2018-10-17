@@ -634,13 +634,13 @@ class LogonBackend extends mix(commonBackend).with(EventHandler, PinHandling) {
         return self.encryptionWrapper.generateSecretKey(password)
             .then(function(_secretkey){
                 secretkey = _secretkey;
+                return self.encryptionWrapper.persistCredentialsFromPassword(user, password);
+            })
+            .then(function(){
                 return self.encryptionWrapper.generateKey(secretkey);
             })
             .then(function(login_sig) {
-                return self.doPost('check', {pwd:String(CryptoJS.SHA512(login_sig + user)), user: user});
-            })
-            .then(function(confkey) {
-                return self.encryptionWrapper.persistCredentialsFromPassword(user, password);
+                return self.doPost('check', {pwd: String(CryptoJS.SHA512(login_sig + user)), user: user});
             });
     }
     doRegister(user, email, password1, password2) {
