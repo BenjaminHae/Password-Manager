@@ -48,7 +48,7 @@ function secondFactor_UserCookieName($userid) {
 }
 
 function secondFactor_loginCredentialCheckSuccess() {
-    global $_COOKIE, $GLOBAL_SALT_3, $link;
+    global $_COOKIE, $GLOBAL_SALT_3, $link, $HOSTDOMAIN;
     $cookieName = secondFactor_UserCookieName($_SESSION['userid']);
     if (array_key_exists($cookieName, $_COOKIE)) {
         $key = $GLOBAL_SALT_3.$_SESSION["pwd"];
@@ -71,6 +71,7 @@ function secondFactor_loginCredentialCheckSuccess() {
 
 function secondFactor_HTTP_showFactor($jwt) {
     global $_COOKIE, $GLOBAL_SALT_3, $link;
+    $FACTOR_VALIDITY = 6*30*24*60*60*1000;//half a year (in milliseconds)
     session_start();
     $key = $GLOBAL_SALT_3.$_SESSION["pwd"];
     $token = secondFactor_verifyJWT($jwt, $key, "secondFactor");
@@ -80,8 +81,8 @@ function secondFactor_HTTP_showFactor($jwt) {
     }
     $_SESSION['loginok'] = "loggedIn";
     $tokenUnnecessary = [ "sub" => $_SESSION["user"], "aud" => "login" ];
-    $jwt = secondFactor_createJWT($tokenUnnecessary, 6*30*24*60*60*1000, $_SESSION["pwd"]);
-    $_COOKIE[secondFactor_UserCookieName($_SESSION["userid"])] = $jwt;
+    $jwt = secondFactor_createJWT($tokenUnnecessary, $FACTOR_VALIDITY, $_SESSION["pwd"]);
+    setcookie(secondFactor_UserCookieName($_SESSION["userid"]), $jwt, time() + $FACTOR_VALIDITY, '/', '', true, true);
     ajaxSuccess(["loggedIn" => true]);
 }
 
