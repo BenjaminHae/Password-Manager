@@ -49,4 +49,5 @@ function add_plugin_listener($hook, $function_name) {
     $listeners[$hook][] = $function_name;
 }
 
+include("../function/plugins/dummyMail.php");
 include("../function/plugins/secondFactor.php");
