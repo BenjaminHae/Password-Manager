@@ -69,7 +69,11 @@ $(function(){
             .then(function(){
                 window.location.href="./password.php";
             })
+            .catch(function(msg) {
+                return callPlugins("loginFailed", msg);
+            })
             .catch(function(msg){
+                clearAllMessages();
                 showMessage("warning", msg);
                 $("#chk").attr("value", "Login");
                 $("#chk").attr("disabled", false);

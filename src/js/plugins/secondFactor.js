@@ -11,6 +11,14 @@ registerPlugin("indexLayoutReady", function(data){
             });
     }
 });
-registerPlugin("loginAuthenticationResult", function(data){
-
+registerPlugin("loginFailed", function(data){
+    if (typeof(data) == "object") {
+        if ((data["message"] == "plugin error") && (data["data"]["state"] == "SecondFactorMissing")) {
+            $("#loginform")[0].reset();
+            throw "This is a new device. Please check your mails for verification. Do not close this window.";
+        }
+    }
+    else {
+        throw data;
+    }
 });

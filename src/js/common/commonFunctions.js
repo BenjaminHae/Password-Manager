@@ -53,6 +53,9 @@ function showMessage(type, message, modal){
         $("#messageDialog").modal('show');
     }
 }
+function clearAllMessages() {
+    $("#messageContainer").empty();
+}
 function base64toBlob(base64Data, contentType) {
     contentType = contentType || '';
     var sliceSize = 1024;		
