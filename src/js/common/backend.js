@@ -42,6 +42,8 @@ class commonBackend {
     }
     static checkApplicationResult(msg) {
         if(msg["status"] != "success") {
+            if("data" in msg)
+                throw(msg);
             throw(msg["message"]);
         }
         return msg;
