@@ -51,3 +51,4 @@ function add_plugin_listener($hook, $function_name) {
 
 include("../function/plugins/dummyMail.php");
 include("../function/plugins/secondFactor.php");
+include("../function/plugins/mailVerification.php");
