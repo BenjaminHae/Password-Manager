@@ -6,7 +6,9 @@ echoheader();
 <script src="js/crypto/pbkdf2.js"></script>
 <script src="js/common/cryptoWrapper.js"></script>
 <script src="js/common/backend.js"></script>
+<script src="js/plugin.js"></script>
 <script src="js/signup.js"></script>
+<script src="js/plugins/signupEmailVerification.js"></script>
 <div class="container theme-showcase">
     <div class="page-header">
         <h1>Password Manager</h1>
