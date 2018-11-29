@@ -1,9 +1,7 @@
 <?php
 
-include("../function/signedTokens.php");
-
 function plugin_dummyMail_sendMailToAddress($options) {
-    error_log($address.": ".$text);
+    error_log($options["address"].": ".$options["content"]);
 }
 
 function plugin_dummyMail_sendMailToCurrentUser($options) {
