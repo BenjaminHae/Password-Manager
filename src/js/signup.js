@@ -29,7 +29,7 @@ $(function(){
                 $("#chk").attr("value", "Submit");
                 $("#chk").attr("disabled", false);
             });
-    }); 
+    });
     backend = new LogonBackend();
     backend.loadInfo()
         .then(function(data){
@@ -38,5 +38,6 @@ $(function(){
                 $("#message").hide();
             }
             $("#user").focus();
+            callPlugins("signupLayoutReady", {});
         });
 }); 
