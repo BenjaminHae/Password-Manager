@@ -1,6 +1,6 @@
 <?php
 
-include("../function/signedTokens.php");
+require_once("../function/signedTokens.php");
 
 function secondFactor_UserCookieName($userid) {
     return hash_hmac("sha256", "FactorUnnecessary" + $userid, JWTdefaultSecret());
