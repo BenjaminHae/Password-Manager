@@ -3,6 +3,60 @@ require_once dirname(__FILE__).'/sqllink.php';
 
 class PluginException extends Exception { }
 
+class Logging {
+    private $db;
+    function __construct($db) {
+        $this->db = $db;
+    }
+    function checkBanned($userId) {
+        global $ACCOUNT_BAN_TIME, $BLOCK_ACCOUNT_TRY;
+        $sql = 'SELECT count(*) as `m` FROM `history` WHERE `userid` = ? AND outcome = 0 AND UNIX_TIMESTAMP( NOW( ) ) - UNIX_TIMESTAMP(`time`) < ?';
+        $res = $this->db->sqlexec($sql, [(int) $userId, $ACCOUNT_BAN_TIME]);
+        $count = $res->fetch(PDO::FETCH_ASSOC);
+        if ((int) $count['m'] >= $BLOCK_ACCOUNT_TRY) {
+            throw new Exception("blockAccount");
+        }
+    }
+    function logAccess($userId, $result) {
+        function getUserIP() {
+            if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR']) {
+                return $_SERVER['HTTP_X_FORWARDED_FOR'];
+            }
+
+            return $_SERVER['REMOTE_ADDR'];
+        }
+        global $_SERVER;
+        $ip = getUserIP();
+        $r = $this->db->sqlquery('SELECT max(`id`) AS `m` FROM `history`')->fetch(PDO::FETCH_ASSOC);
+        $i = (!$r) ? 0 : ((int) $r['m']) + 1;
+        $sql = 'INSERT INTO `history` VALUES (?,?,?,?,?,CURRENT_TIMESTAMP)';
+        $this->db->sqlexec($sql, [$i, $userId, $ip, $_SERVER['HTTP_USER_AGENT'], (int)$result]);
+    }
+    function doIPBan($ip) {
+        $sql = 'SELECT count(*) as `m` FROM `history` WHERE `ip` = ? AND outcome = 0 AND UNIX_TIMESTAMP( NOW( ) ) - UNIX_TIMESTAMP(`time`) < ?';
+        $res = $this->db->sqlexec($sql, [$ip, $BLOCK_IP_TIME]);
+        $count = $res->fetch(PDO::FETCH_ASSOC);
+        if ((int) $count['m'] >= $BLOCK_IP_TRY) {
+            $sql = 'INSERT INTO `blockip` VALUES (?, CURRENT_TIMESTAMP)';
+            $res = $this->db->sqlexec($sql, [$ip]);
+            return TRUE;
+        }
+        return FALSE;
+    }
+    function getLastLogins($userId) {
+        $sql = 'SELECT `id`, UNIX_TIMESTAMP(`time`) AS `time` FROM `history` WHERE `userid` = ? AND `outcome` = 1 ORDER BY `id` DESC LIMIT 1 OFFSET 1';
+        $res = $this->db->sqlexec($sql, [$userId]);
+        $data = $res->fetch(PDO::FETCH_ASSOC);
+        $loginID = $data['id'];
+        $loginInformation = ['lastLogin' => $data['time']];
+
+        $sql = 'SELECT COUNT(*) AS `failedLogins` FROM `history` WHERE `userid` = ? AND `outcome` = 0 AND `id` > ?';
+        $res = $this->db->sqlexec($sql, [$userId, $loginID]);
+        $data = $res->fetch(PDO::FETCH_ASSOC);
+        $loginInformation['failedCount'] = (int) $data['failedLogins'];
+        return $loginInformation;
+    }
+}
 class User {
     private $db;
     private $id;
@@ -21,7 +75,7 @@ class User {
         }
         return new User($db, $record["id"]);
     }
-    static function logon($db, $session, $username, $password) {
+    static function logon($db, $session, $log, $username, $password) {
         $user = User::fromUsername($db, $username);
         try {
             $user->checkBanned();
@@ -42,58 +96,25 @@ class User {
         }
         catch (PluginException $pluginEx) {
             $session->persist($pluginEx->getMessage());
-            $user->logAccess(2); // additional authentication needed
+            $log->logAccess($user->id, 2); // additional authentication needed
             throw $pluginEx;
         }
         catch (Exception $e) {
-            $user->logAccess(0); // authentication failed
-            $user->doIPBan();
+            $log->logAccess($user->id, 0); // authentication failed
+            $log->doIPBan();
             $session->invalidate();
             throw $e;
         }
 
-        $user->logAccess(1); // authentication successfull
+        $log->logAccess($user->id, 1); // authentication successfull
         $session->persist($user, "loggedIn");
         return $user;
     }
 
-    function checkBanned() {
-        global $ACCOUNT_BAN_TIME, $BLOCK_ACCOUNT_TRY;
-        $sql = 'SELECT count(*) as `m` FROM `history` WHERE `userid` = ? AND outcome = 0 AND UNIX_TIMESTAMP( NOW( ) ) - UNIX_TIMESTAMP(`time`) < ?';
-        $res = $this->db->sqlexec($sql, [(int) $this->id, $ACCOUNT_BAN_TIME]);
-        $count = $res->fetch(PDO::FETCH_ASSOC);
-        if ((int) $count['m'] >= $BLOCK_ACCOUNT_TRY) {
-            throw new Exception("blockAccount");
-        }
-    }
     function checkPassword($password) {
         global $PBKDF2_ITERATIONS;
         if (strcmp((string) $this->data()['password'], (string) hash_pbkdf2('sha256', $pw, (string) $this->data()['salt'], $PBKDF2_ITERATIONS)) != 0) {
             throw new Exception('loginFailed');
-        }
-    }
-    function logAccess($result) {
-        function getUserIP() {
-            if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR']) {
-                return $_SERVER['HTTP_X_FORWARDED_FOR'];
-            }
-
-            return $_SERVER['REMOTE_ADDR'];
-        }
-        global $_SERVER;
-        $ip = getUserIP();
-        $r = $this->db->sqlquery('SELECT max(`id`) AS `m` FROM `history`')->fetch(PDO::FETCH_ASSOC);
-        $i = (!$r) ? 0 : ((int) $r['m']) + 1;
-        $sql = 'INSERT INTO `history` VALUES (?,?,?,?,?,CURRENT_TIMESTAMP)';
-        $this->db->sqlexec($sql, [$i, $this->id, $ip, $_SERVER['HTTP_USER_AGENT'], (int)$result]);
-    }
-    function doIPBan() {
-        $sql = 'SELECT count(*) as `m` FROM `history` WHERE `ip` = ? AND outcome = 0 AND UNIX_TIMESTAMP( NOW( ) ) - UNIX_TIMESTAMP(`time`) < ?';
-        $res = $this->db->sqlexec($sql, [$ip, $BLOCK_IP_TIME]);
-        $count = $res->fetch(PDO::FETCH_ASSOC);
-        if ((int) $count['m'] >= $BLOCK_IP_TRY) {
-            $sql = 'INSERT INTO `blockip` VALUES (?, CURRENT_TIMESTAMP)';
-            $res = $this->db->sqlexec($sql, [$ip]);
         }
     }
     function data($forceReload = FALSE) {
@@ -123,20 +144,6 @@ class User {
             $fdata[] = ['index' => $i['index'], 'fname' => $i['fname'], 'fkey' => $i['key']];
         }
         return $fdata;
-    }
-    //Todo: move to log
-    function getLastLogins() {
-        $sql = 'SELECT `id`, UNIX_TIMESTAMP(`time`) AS `time` FROM `history` WHERE `userid` = ? AND `outcome` = 1 ORDER BY `id` DESC LIMIT 1 OFFSET 1';
-        $res = $this->db->sqlexec($sql, [$id]);
-        $data = $res->fetch(PDO::FETCH_ASSOC);
-        $loginID = $data['id'];
-        $loginInformation = ['lastLogin' => $data['time']];
-
-        $sql = 'SELECT COUNT(*) AS `failedLogins` FROM `history` WHERE `userid` = ? AND `outcome` = 0 AND `id` > ?';
-        $res = $this->db->sqlexec($sql, [$id, $loginID]);
-        $data = $res->fetch(PDO::FETCH_ASSOC);
-        $loginInformation['failedCount'] = (int) $data['failedLogins'];
-        return $loginInformation;
     }
 }
 class Session {
