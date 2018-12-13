@@ -30,6 +30,6 @@ $result['accounts'] = $user->getAccounts();
 $result['fdata'] = $user->getFiles();
 
 // Show Login attempts
-$result['loginInformation'] = $user->getLastLogins();
+$result['loginInformation'] = (new Logging($db))->getLastLogins($user->id);
 
 ajaxSuccess($result);
